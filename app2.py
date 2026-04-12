@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import uuid
-from streamlit_js_eval import get_geolocation
+from streamlit_js_eval import get_geolocation, streamlit_js_eval
 
 # --- 設定 ---
 GAS_URL = st.secrets["GAS_URL"]
@@ -9,33 +9,41 @@ MY_TOKEN = st.secrets["MY_TOKEN"]
 
 st.set_page_config(page_title="勤怠管理システム", layout="centered")
 
-# --- ブラウザに刻み込む記憶ロジック (JavaScript使用) ---
+# --- 1. エラーに強いLocalStorage読み書き機能 ---
 def get_local_storage(key):
-    """ブラウザのLocalStorageから値を読み出す"""
-    from streamlit_js_eval import streamlit_js_eval
-    return streamlit_js_eval(f"localStorage.getItem('{key}')", key=f"get_{key}")
+    try:
+        # ブラウザの準備ができるまで待機しつつ読み込む
+        return streamlit_js_eval(f"localStorage.getItem('{key}')", key=f"get_{key}")
+    except:
+        return None
 
 def set_local_storage(key, value):
-    """ブラウザのLocalStorageに値を書き込む"""
-    from streamlit_js_eval import streamlit_js_eval
-    streamlit_js_eval(f"localStorage.setItem('{key}', '{value}')", key=f"set_{key}_{value}")
+    try:
+        streamlit_js_eval(f"localStorage.setItem('{key}', '{value}')", key=f"set_{key}_{value}")
+    except:
+        pass
 
-# 1. デバイスIDの取得/発行
-if "device_id" not in st.session_state:
-    saved_id = get_local_storage("device_id")
-    if saved_id:
-        st.session_state.device_id = saved_id
-    else:
-        new_id = str(uuid.uuid4())
-        st.session_state.device_id = new_id
-        set_local_storage("device_id", new_id)
+# --- 2. 起動時のデータ取得（重要） ---
+# 読み込みが完了するまで「None」が返るため、ここで一旦止める
+saved_id = get_local_storage("device_id")
+saved_name = get_local_storage("user_name")
 
-# 2. 登録済み氏名の取得
+if saved_id is None:
+    st.info("システム準備中...（数秒お待ちください）")
+    st.stop()
+
+# デバイスIDが未発行なら新規作成して保存
+if not saved_id:
+    device_id = str(uuid.uuid4())
+    set_local_storage("device_id", device_id)
+else:
+    device_id = saved_id
+
+# 名前が保存されていればセッションに入れる
 if "user_name" not in st.session_state:
-    saved_name = get_local_storage("user_name")
     st.session_state.user_name = saved_name if saved_name else ""
 
-# --- A. ログイン画面 ---
+# --- 3. ログイン画面（名前が不明な場合） ---
 if not st.session_state.user_name:
     st.subheader("🔑 初回ログイン登録")
     name_input = st.text_input("お名前（フルネーム）")
@@ -45,37 +53,43 @@ if not st.session_state.user_name:
         if name_input and pin_input:
             params = {
                 "name": name_input, "pin": pin_input,
-                "deviceId": st.session_state.device_id, "token": MY_TOKEN
+                "deviceId": device_id, "token": MY_TOKEN
             }
-            res = requests.get(GAS_URL, params=params)
-            data = res.json()
-            if "error" not in data:
-                st.session_state.user_name = data["name"]
-                st.session_state.my_stations = data["stations"]
-                set_local_storage("user_name", data["name"]) # 名前をスマホに記憶
-                st.rerun()
-            else:
-                st.error(data["error"])
+            try:
+                res = requests.get(GAS_URL, params=params)
+                data = res.json()
+                if "error" not in data:
+                    st.session_state.user_name = data["name"]
+                    st.session_state.my_stations = data["stations"]
+                    set_local_storage("user_name", data["name"])
+                    st.rerun()
+                else:
+                    st.error(data["error"])
+            except:
+                st.error("通信エラーが発生しました。")
     st.stop()
 
-# --- B. PIN認証画面（2回目以降） ---
+# --- 4. 暗証番号認証画面（名前は覚えているが、未認証の場合） ---
 if "authenticated" not in st.session_state:
     st.subheader(f"お疲れ様です、{st.session_state.user_name} さん")
     pin_check = st.text_input("暗証番号を入力してください", type="password")
     
-    if st.button("認証"):
+    if st.button("ログイン"):
         params = {
             "name": st.session_state.user_name, "pin": pin_check,
-            "deviceId": st.session_state.device_id, "token": MY_TOKEN
+            "deviceId": device_id, "token": MY_TOKEN
         }
-        res = requests.get(GAS_URL, params=params)
-        data = res.json()
-        if "error" not in data:
-            st.session_state.authenticated = True
-            st.session_state.my_stations = data["stations"]
-            st.rerun()
-        else:
-            st.error("暗証番号が正しくありません。")
+        try:
+            res = requests.get(GAS_URL, params=params)
+            data = res.json()
+            if "error" not in data:
+                st.session_state.authenticated = True
+                st.session_state.my_stations = data["stations"]
+                st.rerun()
+            else:
+                st.error("暗証番号が正しくありません。")
+        except:
+            st.error("通信エラーが発生しました。")
     
     if st.button("別の名前でログインし直す"):
         set_local_storage("user_name", "")
@@ -83,7 +97,7 @@ if "authenticated" not in st.session_state:
         st.rerun()
     st.stop()
 
-# --- C. メイン機能（出退勤） ---
+# --- 5. メイン画面（出退勤） ---
 st.title("勤怠管理システム")
 loc = get_geolocation()
 st.write(f"ログイン中： **{st.session_state.user_name}**")
@@ -117,4 +131,4 @@ with col1:
         send_data("出勤")
 with col2:
     if st.button("退勤する", use_container_width=True):
-        send_data("退勤")
+        send_data("退勤")-
