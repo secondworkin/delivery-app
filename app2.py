@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from streamlit_js_eval import get_geolocation
 
 # --- 設定 ---
 GAS_URL = st.secrets["GAS_URL"]
@@ -26,13 +27,16 @@ if "user_name" not in st.session_state:
                 else:
                     st.error("IDが正しくないか、登録されていません。")
             except:
-                st.error("通信エラーが発生しました。")
+                st.error("通信エラーが発生しました。GASのURL等を確認してください。")
         else:
             st.warning("IDを入力してください。")
     st.stop()
 
 # --- 2. 出退勤メイン画面 ---
 st.title("勤怠管理システム")
+# ここでGPSを取得（許可ダイアログが出ます）
+loc = get_geolocation()
+
 st.write(f"利用者： **{st.session_state.user_name}** さん")
 
 # 現場選択
@@ -45,16 +49,24 @@ else:
 col1, col2 = st.columns(2)
 
 def send_data(status):
-    post_data = {
-        "token": MY_TOKEN,
-        "station": selected_station,
-        "name": st.session_state.user_name,
-        "status": status
-    }
-    with st.spinner("送信中..."):
-        requests.post(GAS_URL, json=post_data)
-        st.success(f"【{status}】完了！")
-        st.balloons()
+    if loc:
+        lat, lon = loc['coords']['latitude'], loc['coords']['longitude']
+        map_url = f"https://www.google.com/maps?q={lat},{lon}"
+        
+        post_data = {
+            "token": MY_TOKEN,
+            "station": selected_station,
+            "name": st.session_state.user_name,
+            "status": status,
+            "location": map_url
+        }
+        with st.spinner(f"{status}を送信中..."):
+            requests.post(GAS_URL, json=post_data)
+            st.success(f"【{status}】完了！")
+            st.balloons()
+    else:
+        st.warning("GPS取得中... 数秒待ってから押し直してください。")
+        st.info("※ブラウザの「位置情報サービス」がオフの場合、記録できません。")
 
 with col1:
     if st.button("出勤", use_container_width=True, type="primary"):
