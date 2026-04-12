@@ -1,87 +1,94 @@
 import streamlit as st
 import requests
-from streamlit_js_eval import get_geolocation
+import uuid
+from streamlit_js_eval import get_geolocation, set_cookie, get_cookie
 
 # --- 設定 ---
 GAS_URL = st.secrets["GAS_URL"]
 MY_TOKEN = st.secrets["MY_TOKEN"]
 
 st.set_page_config(page_title="勤怠管理システム", layout="centered")
-st.title("勤怠管理システム")
 
-# 1. ログイン・名前固定ロジック
-if "user_name" not in st.session_state:
-    st.session_state.user_name = st.query_params.get("user_name", "")
+# --- 【重要】スマホ固有のIDを管理するロジック ---
+# ブラウザのクッキーに保存されたIDを読み取る。なければ新規発行。
+if "device_id" not in st.session_state:
+    saved_id = get_cookie("device_id")
+    if saved_id:
+        st.session_state.device_id = saved_id
+    else:
+        new_id = str(uuid.uuid4()) # ランダムな固有IDを生成
+        st.session_state.device_id = new_id
+        set_cookie("device_id", new_id, 365) # 1年間有効なクッキーとして保存
 
-if not st.session_state.user_name:
-    st.subheader("🔑 ログイン")
-    name_input = st.text_input("お名前を入力してください（フルネーム）")
+# --- 1. ログイン画面 ---
+if "user_name" not in st.session_state or not st.session_state.user_name:
+    st.subheader("🔑 ログイン（初回登録）")
+    name_input = st.text_input("お名前（フルネーム）")
+    pin_input = st.text_input("暗証番号（4桁）", type="password")
+    
     if st.button("ログイン"):
-        if name_input:
-            st.session_state.user_name = name_input
-            st.query_params["user_name"] = name_input
-            st.rerun()
+        if name_input and pin_input:
+            # GASに「名前・PIN・スマホID」を全部送ってチェックしてもらう
+            params = {
+                "name": name_input,
+                "pin": pin_input,
+                "deviceId": st.session_state.device_id,
+                "token": MY_TOKEN
+            }
+            try:
+                res = requests.get(GAS_URL, params=params)
+                data = res.json()
+                
+                if "error" not in data:
+                    st.session_state.user_name = data["name"]
+                    st.session_state.my_stations = data["stations"]
+                    # ログイン成功したら名前もクッキーに保存（次回オートログイン用）
+                    set_cookie("driver_name", data["name"], 30)
+                    st.rerun()
+                else:
+                    st.error(data["error"])
+            except:
+                st.error("通信エラーが発生しました。")
+        else:
+            st.warning("名前と暗証番号を入力してください。")
     st.stop()
 
-# 2. GPS取得
+# --- 2. 出退勤メイン画面 ---
+st.title("勤怠管理システム")
 loc = get_geolocation()
 
-# 3. 担当現場リストを取得
-@st.cache_data(ttl=600)
-def get_my_stations(name):
-    try:
-        response = requests.get(f"{GAS_URL}?name={name}&token={MY_TOKEN}")
-        if response.status_code == 200:
-            return response.json()["stations"]
-        return []
-    except:
-        return []
-
-my_stations = get_my_stations(st.session_state.user_name)
-
-# 現場が見つからない場合の処理
-if not my_stations:
-    st.error(f"「{st.session_state.user_name}」さんの担当現場が登録されていません。")
-    if st.button("ログアウトして別の名前で試す"):
-        st.query_params.clear()
-        st.session_state.user_name = ""
-        st.rerun()
-    st.stop()
-
-# 4. 画面表示と現場選択
 st.write(f"利用者： **{st.session_state.user_name}** さん")
 
-if len(my_stations) > 1:
-    selected_station = st.selectbox("本日の現場を選択してください", my_stations)
+# 現場選択
+if len(st.session_state.my_stations) > 1:
+    selected_station = st.selectbox("本日の現場を選択してください", st.session_state.my_stations)
 else:
-    selected_station = my_stations[0]
+    selected_station = st.session_state.my_stations[0]
     st.info(f"現場： **{selected_station}**")
 
-# 5. 出退勤ボタン
+# 出退勤ボタン（共通ロジック）
 col1, col2 = st.columns(2)
 
-# 送信共通ロジック
 def send_data(status):
     if loc:
-        lat = loc['coords']['latitude']
-        lon = loc['coords']['longitude']
+        lat, lon = loc['coords']['latitude'], loc['coords']['longitude']
         map_url = f"https://www.google.com/maps?q={lat},{lon}"
         
-        data = {
+        post_data = {
             "token": MY_TOKEN,
             "station": selected_station,
-            "name": st.session_state.user_name, # ログイン名を使用
+            "name": st.session_state.user_name,
             "status": status,
             "location": map_url
         }
         
         with st.spinner(f"{status}を送信中..."):
-            response = requests.post(GAS_URL, json=data)
+            response = requests.post(GAS_URL, json=post_data)
             if response.status_code == 200:
-                st.success(f"【{status}】{selected_station}に記録しました！")
+                st.success(f"【{status}】{selected_station}に記録完了！")
                 st.balloons()
             else:
-                st.error(f"送信エラー: {response.text}")
+                st.error("送信に失敗しました。")
     else:
         st.warning("GPS取得中... 数秒待ってから押し直してください。")
 
@@ -93,9 +100,9 @@ with col2:
     if st.button("退勤する", use_container_width=True):
         send_data("退勤")
 
-# 画面下部にログアウトオプション
+# ログアウト（強制リセット）
 st.divider()
-if st.button("ログアウト (別の名前で入る)", key="logout"):
-    st.query_params.clear()
+if st.button("ログアウト / 別の端末でログインし直す"):
+    set_cookie("driver_name", "", -1)
     st.session_state.user_name = ""
     st.rerun()
