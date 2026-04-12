@@ -131,4 +131,4 @@ with col1:
         send_data("出勤")
 with col2:
     if st.button("退勤する", use_container_width=True):
-        send_data("退勤")-
+        send_data("退勤")
