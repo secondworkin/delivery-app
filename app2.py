@@ -123,7 +123,6 @@ elif st.session_state.page == "reward":
 
     with st.spinner("データを集計中..."):
         try:
-            # GASに全現場のデータを要求（現在ログインしている人の現場リストを投げる）
             stations_str = ",".join(st.session_state.my_stations)
             res = requests.get(GAS_URL, params={
                 "token": MY_TOKEN, 
@@ -134,21 +133,25 @@ elif st.session_state.page == "reward":
             logs = res.json().get("logs", [])
             
             if logs:
-                # pandasで自分の名前のデータだけを抽出
                 df = pd.DataFrame(logs, columns=["日時", "名前", "状態", "グループ", "金額", "場所"])
-                # 名前が一致し、かつ金額が入っているものだけ
-                my_df = df[(df["名前"] == st.session_state.user_name) & (df["金額"] != "")]
+                
+                my_df = df[(df["名前"] == st.session_state.user_name) & (df["金額"] != "")].copy()
                 
                 if not my_df.empty:
-                    # 金額を数値に変換して合計
+                    # 【秘匿化】末尾1文字（AやB）を削除した現場名のみを作成
+                    # 自販連A -> 自販連
+                    my_df["現場"] = my_df["グループ"].apply(lambda x: str(x)[:-1])
+                    
                     total_reward = pd.to_numeric(my_df["金額"]).sum()
                     
                     st.metric("今月の合計報酬（概算）", f"{total_reward:,} 円")
                     
                     st.write("### 稼働履歴")
-                    # 日時を分かりやすくして表示
                     my_df["日時"] = pd.to_datetime(my_df["日時"]).dt.strftime('%m/%d %H:%M')
-                    st.dataframe(my_df[["日時", "状態", "グループ", "金額"]], use_container_width=True)
+                    
+                    # 不要な情報を削ってスッキリ表示
+                    display_df = my_df[["日時", "現場", "金額"]]
+                    st.dataframe(display_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("集計対象となる報酬データが見つかりませんでした。")
             else:
