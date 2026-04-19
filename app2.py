@@ -137,7 +137,8 @@ elif st.session_state.page == "reward":
                 my_df = df[(df["名前"] == st.session_state.user_name) & (df["金額"] != "")].copy()
                 
                 if not my_df.empty:
-                    my_df["現場"] = my_df["グループ"].apply(lambda x: str(x)[:-1])
+                    # 現場名の整形
+                    my_df["現場"] = my_df["グループ"].apply(lambda x: str(x)[:-1] if str(x) else "")
                     total_reward = pd.to_numeric(my_df["金額"]).sum()
                     
                     st.metric("今月の合計報酬（概算）", f"{total_reward:,} 円")
@@ -147,37 +148,48 @@ elif st.session_state.page == "reward":
                     display_df = my_df[["日時_表示", "現場", "金額"]]
                     st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-                    # --- 📝 追加：請求書PDF発行フォーム ---
+                    # --- 📝 請求書PDF発行フォーム ---
                     st.markdown("---")
                     st.subheader("📄 請求書の発行")
-                    st.caption("※以下の情報はPDF作成時のみ使用され、クラウドには保存されません。")
+                    st.caption("※以下の情報はPDF作成時のみ使用され、保存されません。")
                     
-                    zip_code = st.text_input("郵便番号", placeholder="123-4567")
-                    address = st.text_input("住所", placeholder="石川県金沢市...")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        zip_code = st.text_input("郵便番号", placeholder="123-4567")
+                        invoice_num = st.text_input("インボイス登録番号", placeholder="T1234567890123")
+                    with col2:
+                        address = st.text_input("住所", placeholder="石川県金沢市...")
+                    
                     bank_info = st.text_input("振込先口座", placeholder="〇〇銀行 〇〇支店 普通 1234567")
                     
                     if st.button("請求書PDFを作成する", use_container_width=True, type="primary"):
                         if not zip_code or not address or not bank_info:
-                            st.warning("すべての情報を入力してください。")
+                            st.warning("郵便番号・住所・口座は必須入力です。")
                         else:
-                            # PDF作成用のデータ準備
+                            # GASへ送るデータの作成
                             invoice_data = {
-                                "action": "create_pdf",
+                                "action": "generate_pdf",
                                 "token": MY_TOKEN,
                                 "name": st.session_state.user_name,
                                 "zip": zip_code,
                                 "address": address,
                                 "bank": bank_info,
+                                "invoiceNum": invoice_num,
                                 "logs": my_df[["日時", "現場", "金額"]].to_dict(orient="records")
                             }
                             
                             with st.spinner("PDFを生成中..."):
                                 try:
-                                    # まだGAS側が未対応なので、今はリクエストを送る準備だけ
-                                    # res_pdf = requests.post(GAS_URL, json=invoice_data, timeout=30)
-                                    st.info("GAS側のPDF生成ロジックを次に実装しましょう！")
-                                except:
-                                    st.error("PDFの生成に失敗しました。")
+                                    res_pdf = requests.post(GAS_URL, json=invoice_data, timeout=30)
+                                    pdf_result = res_pdf.json()
+                                    
+                                    if "pdfUrl" in pdf_result:
+                                        st.success("PDFが完成しました！")
+                                        st.link_button("📄 PDFを開く・ダウンロード", pdf_result["pdfUrl"])
+                                    else:
+                                        st.error(f"エラー: {pdf_result.get('error', '不明なエラー')}")
+                                except Exception as e:
+                                    st.error(f"通信エラー: {e}")
 
                 else:
                     st.info("集計対象となる報酬データが見つかりませんでした。")
