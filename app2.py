@@ -23,7 +23,6 @@ if "user_name" not in st.session_state:
     if st.button("ログイン"):
         if user_id:
             try:
-                # GAS側のIDチェック（doGet）
                 res = requests.get(GAS_URL, params={"id": user_id, "token": MY_TOKEN}, timeout=10)
                 data = res.json()
                 if "error" not in data:
@@ -124,10 +123,10 @@ elif st.session_state.page == "reward":
     st.title("💰 報酬確定額")
     st.write(f"対象者： **{st.session_state.user_name}** さん")
 
-    # --- 📅 月選択メニューの追加 ---
+    # --- 📅 月選択メニュー ---
     now = datetime.now()
     month_options = []
-    for i in range(5): # 直近5ヶ月分を選択肢に
+    for i in range(5):
         m = (now.month - i - 1) % 12 + 1
         y = now.year + (now.month - i - 1) // 12
         month_options.append(f"{y}/{m:02d}")
@@ -147,10 +146,8 @@ elif st.session_state.page == "reward":
             
             if logs:
                 df = pd.DataFrame(logs, columns=["日時", "名前", "状態", "グループ", "金額", "場所"])
-                
-                # 日付型に変換
                 df["日時_dt"] = pd.to_datetime(df["日時"])
-                # 選択された月でフィルタリング
+                
                 target_y, target_m = map(int, selected_month.split("/"))
                 my_df = df[
                     (df["名前"] == st.session_state.user_name) & 
@@ -190,7 +187,6 @@ elif st.session_state.page == "reward":
                                 "zip": zip_code,
                                 "address": address,
                                 "bank": bank_info,
-                                # フィルタリング済みのデータを送る
                                 "logs": my_df[["日時", "現場", "金額"]].to_dict(orient="records")
                             }
                             
@@ -200,7 +196,6 @@ elif st.session_state.page == "reward":
                                     res_json = res_pdf.json()
                                     
                                     if res_json.get("status") == "success":
-                                        # Base64をデコードしてダウンロードボタンを表示
                                         pdf_bytes = base64.b64decode(res_json["pdfData"])
                                         st.success("PDFの作成が完了しました！")
                                         st.download_button(
@@ -211,10 +206,9 @@ elif st.session_state.page == "reward":
                                             use_container_width=True
                                         )
                                     else:
-                                        st.error(f"エラー: {res_json.get('message')}")
+                                        st.error(f"GASエラー: {res_json.get('message')}")
                                 except Exception as e:
-                                    st.error(f"PDFの生成に失敗しました: {e}")
-
+                                    st.error(f"通信エラー: {e}")
                 else:
                     st.info(f"{selected_month} の集計対象データが見つかりませんでした。")
             else:
