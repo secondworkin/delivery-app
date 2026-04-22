@@ -67,26 +67,40 @@ elif st.session_state.page == "attendance":
         if len(st.session_state.my_stations) == 1: st.info(f"現場： **{selected_station}**")
         
         col1, col2 = st.columns(2)
+        
         def send_data(status):
             location_data = "GPS取得失敗"
             if loc:
                 lat, lon = loc['coords']['latitude'], loc['coords']['longitude']
                 location_data = f"http://maps.google.com/?q={lat},{lon}"
-            post_data = {"token": MY_TOKEN, "station": selected_station, "name": st.session_state.user_name, "status": status, "location": location_data}
+            
+            post_data = {
+                "token": MY_TOKEN, 
+                "station": selected_station, 
+                "name": st.session_state.user_name, 
+                "status": status, 
+                "location": location_data
+            }
+            
             with st.spinner("送信中..."):
                 try:
                     res = requests.post(GAS_URL, json=post_data, timeout=10)
                     res_data = res.json()
+                    
+                    # GAS側からエラーが返ってきた場合の判定を強化
                     if "error" in res_data:
                         if res_data.get("error") == "ALREADY_DONE":
+                            # 重複エラーの場合は警告を表示して終了（風船は出さない）
                             st.warning(res_data.get("message"))
                         else:
-                            st.error(f"エラー: {res_data.get('message', '送信失敗')}")
+                            st.error(f"エラー: {res_data.get('message', '送信に失敗しました')}")
                     else:
+                        # 成功した場合のみ「完了！」と風船を出す
                         st.success(f"{status}完了！")
                         st.balloons()
-                except:
-                    st.error("送信に失敗しました")
+                except Exception as e:
+                    st.error(f"通信エラーが発生しました")
+
         with col1:
             if st.button("出勤する", use_container_width=True, type="primary"): send_data("出勤")
         with col2:
@@ -94,7 +108,7 @@ elif st.session_state.page == "attendance":
     else:
         st.error("担当現場が登録されていません。")
 
-# --- 5. 報酬確定額の確認画面 ---
+# --- 5. 報酬確定額の確認画面（以下、変更なし） ---
 elif st.session_state.page == "reward":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
