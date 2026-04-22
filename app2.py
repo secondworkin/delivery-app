@@ -3,10 +3,25 @@ import requests
 from streamlit_js_eval import get_geolocation
 import pandas as pd
 from datetime import datetime
+from urllib3.util import Retry
+from requests.adapters import HTTPAdapter
 
 # --- 設定 ---
 GAS_URL = st.secrets["GAS_URL"]
 MY_TOKEN = st.secrets["MY_TOKEN"]
+
+# --- 通信エラー対策：粘り強くリトライするセッションの設定 ---
+def get_safe_session():
+    session = requests.Session()
+    retries = Retry(
+        total=3,           # 最大3回までやり直す
+        backoff_factor=1,  # 失敗するごとに1秒, 2秒...と待機を挟む（GASの起動を待つ）
+        status_forcelist=[500, 502, 503, 504] # サーバーエラー時にリトライ
+    )
+    session.mount("https://", HTTPAdapter(max_retries=retries))
+    return session
+
+session = get_safe_session()
 
 st.set_page_config(page_title="勤怠管理システム", layout="centered")
 
@@ -19,18 +34,20 @@ if "user_name" not in st.session_state:
     user_id = st.text_input("割り当てられたIDを入力してください", key="login_id")
     if st.button("ログイン"):
         if user_id:
-            try:
-                res = requests.get(GAS_URL, params={"id": user_id, "token": MY_TOKEN}, timeout=10)
-                data = res.json()
-                if "error" not in data:
-                    st.session_state.user_name = data["name"]
-                    st.session_state.my_stations = data["stations"]
-                    st.session_state.page = "menu"
-                    st.rerun()
-                else:
-                    st.error("IDが正しくありません")
-            except:
-                st.error("通信エラーが発生しました")
+            with st.spinner("認証中..."):
+                try:
+                    # timeoutを15秒に延長し、session経由でリトライを有効化
+                    res = session.get(GAS_URL, params={"id": user_id, "token": MY_TOKEN}, timeout=15)
+                    data = res.json()
+                    if "error" not in data:
+                        st.session_state.user_name = data["name"]
+                        st.session_state.my_stations = data["stations"]
+                        st.session_state.page = "menu"
+                        st.rerun()
+                    else:
+                        st.error("IDが正しくありません")
+                except:
+                    st.error("通信が混み合っています。もう一度ログインボタンを押してください。")
         else:
             st.warning("IDを入力してください")
     st.stop()
@@ -84,22 +101,20 @@ elif st.session_state.page == "attendance":
             
             with st.spinner("送信中..."):
                 try:
-                    res = requests.post(GAS_URL, json=post_data, timeout=10)
+                    # ここもsession.postに変更して安定化
+                    res = session.post(GAS_URL, json=post_data, timeout=15)
                     res_data = res.json()
                     
-                    # GAS側からエラーが返ってきた場合の判定を強化
                     if "error" in res_data:
                         if res_data.get("error") == "ALREADY_DONE":
-                            # 重複エラーの場合は警告を表示して終了（風船は出さない）
                             st.warning(res_data.get("message"))
                         else:
-                            st.error(f"エラー: {res_data.get('message', '送信に失敗しました')}")
+                            st.error(f"エラー: {res_data.get('message', '送信失敗')}")
                     else:
-                        # 成功した場合のみ「完了！」と風船を出す
                         st.success(f"{status}完了！")
                         st.balloons()
-                except Exception as e:
-                    st.error(f"通信エラーが発生しました")
+                except:
+                    st.error("通信エラーが発生しました。もう一度お試しください。")
 
         with col1:
             if st.button("出勤する", use_container_width=True, type="primary"): send_data("出勤")
@@ -108,7 +123,7 @@ elif st.session_state.page == "attendance":
     else:
         st.error("担当現場が登録されていません。")
 
-# --- 5. 報酬確定額の確認画面（以下、変更なし） ---
+# --- 5. 報酬確定額の確認画面 ---
 elif st.session_state.page == "reward":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
@@ -121,7 +136,7 @@ elif st.session_state.page == "reward":
 
     with st.spinner("データを集計中..."):
         try:
-            res = requests.get(GAS_URL, params={"token": MY_TOKEN, "action": "get_logs", "stations": ",".join(st.session_state.my_stations)}, timeout=10)
+            res = session.get(GAS_URL, params={"token": MY_TOKEN, "action": "get_logs", "stations": ",".join(st.session_state.my_stations)}, timeout=15)
             logs = res.json().get("logs", [])
             if logs:
                 df = pd.DataFrame(logs, columns=["日時", "名前", "状態", "グループ", "金額", "場所"])
@@ -136,7 +151,7 @@ elif st.session_state.page == "reward":
 
                     st.markdown("---")
                     st.subheader("📄 請求書情報の申請")
-                    st.caption("以下の情報を入力して送信してください。申請後、管理側で請求書が作成されます。")
+                    st.caption("以下の情報を入力して送信してください。")
                     zip_code = st.text_input("郵便番号", placeholder="123-4567")
                     address = st.text_input("住所", placeholder="石川県金沢市...")
                     bank_info = st.text_input("振込先口座", placeholder="〇〇銀行 支店 普通 1234567")
@@ -148,7 +163,7 @@ elif st.session_state.page == "reward":
                             invoice_data = {"action": "create_pdf", "token": MY_TOKEN, "name": st.session_state.user_name, "zip": zip_code, "address": address, "bank": bank_info, "logs": my_df[["日時", "現場", "金額"]].to_dict(orient="records")}
                             with st.spinner("送信中..."):
                                 try:
-                                    res_upd = requests.post(GAS_URL, json=invoice_data, timeout=30)
+                                    res_upd = session.post(GAS_URL, json=invoice_data, timeout=30)
                                     if res_upd.json().get("status") == "success":
                                         st.success("送信が完了しました。")
                                     else:
@@ -156,6 +171,6 @@ elif st.session_state.page == "reward":
                                 except:
                                     st.error("通信エラーが発生しました。")
                 else:
-                    st.info("集計対象のデータがありません")
+                    st.info("データがありません")
         except:
             st.error("データ取得中にエラーが発生しました")
