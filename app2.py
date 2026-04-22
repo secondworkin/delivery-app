@@ -29,7 +29,7 @@ if "user_name" not in st.session_state:
                     st.rerun()
                 else:
                     st.error("IDが正しくありません")
-            except Exception as e:
+            except:
                 st.error("通信エラーが発生しました")
         else:
             st.warning("IDを入力してください")
@@ -114,28 +114,27 @@ elif st.session_state.page == "reward":
                     st.dataframe(my_df[["日時", "現場", "金額"]].assign(日時=my_df["日時_dt"].dt.strftime('%m/%d %H:%M')), use_container_width=True, hide_index=True)
 
                     st.markdown("---")
-                    st.subheader("📄 請求書の発行")
+                    st.subheader("📄 請求書の申請")
+                    st.caption("以下の情報を入力して送信してください。会社側のスプレッドシートが更新されます。")
                     zip_code = st.text_input("郵便番号", placeholder="123-4567")
                     address = st.text_input("住所", placeholder="石川県金沢市...")
                     bank_info = st.text_input("振込先口座", placeholder="〇〇銀行 支店 普通 1234567")
                     
-                    if st.button("請求書データを更新する", use_container_width=True, type="primary"):
+                    if st.button("請求書データを送信する", use_container_width=True, type="primary"):
                         if not zip_code or not address or not bank_info:
                             st.warning("情報を入力してください")
                         else:
                             invoice_data = {"action": "create_pdf", "token": MY_TOKEN, "name": st.session_state.user_name, "zip": zip_code, "address": address, "bank": bank_info, "logs": my_df[["日時", "現場", "金額"]].to_dict(orient="records")}
-                            with st.spinner("スプレッドシート更新中..."):
+                            with st.spinner("送信中..."):
                                 try:
                                     res_upd = requests.post(GAS_URL, json=invoice_data, timeout=30)
-                                    res_json = res_upd.json()
-                                    if res_json.get("status") == "success":
-                                        st.success("スプレッドシートの更新が完了しました！")
-                                        st.link_button("📥 請求書を確認・印刷する", res_json["sheetUrl"], use_container_width=True)
+                                    if res_upd.json().get("status") == "success":
+                                        st.success("送信が完了しました。")
                                     else:
-                                        st.error(f"エラー: {res_json.get('message')}")
-                                except Exception as e:
-                                    st.error(f"通信エラー: {e}")
+                                        st.error("エラーが発生しました。")
+                                except:
+                                    st.error("通信エラーが発生しました。")
                 else:
                     st.info("データがありません")
-        except Exception as e:
-            st.error(f"取得エラー: {e}")
+        except:
+            st.error("取得エラーが発生しました")
