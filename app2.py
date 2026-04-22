@@ -114,8 +114,8 @@ elif st.session_state.page == "reward":
                     st.dataframe(my_df[["日時", "現場", "金額"]].assign(日時=my_df["日時_dt"].dt.strftime('%m/%d %H:%M')), use_container_width=True, hide_index=True)
 
                     st.markdown("---")
-                    st.subheader("📄 請求書の申請")
-                    st.caption("以下の情報を入力して送信してください。会社側のスプレッドシートが更新されます。")
+                    st.subheader("📄 請求書情報の申請")
+                    st.caption("以下の情報を入力して送信してください。申請後、管理側で請求書が作成されます。")
                     zip_code = st.text_input("郵便番号", placeholder="123-4567")
                     address = st.text_input("住所", placeholder="石川県金沢市...")
                     bank_info = st.text_input("振込先口座", placeholder="〇〇銀行 支店 普通 1234567")
@@ -128,13 +128,14 @@ elif st.session_state.page == "reward":
                             with st.spinner("送信中..."):
                                 try:
                                     res_upd = requests.post(GAS_URL, json=invoice_data, timeout=30)
+                                    # 余計な変数は探さず、成功したかどうかだけをチェック
                                     if res_upd.json().get("status") == "success":
                                         st.success("送信が完了しました。")
                                     else:
-                                        st.error("エラーが発生しました。")
+                                        st.error("送信に失敗しました。管理者に連絡してください。")
                                 except:
                                     st.error("通信エラーが発生しました。")
                 else:
-                    st.info("データがありません")
+                    st.info("集計対象のデータがありません")
         except:
-            st.error("取得エラーが発生しました")
+            st.error("データ取得中にエラーが発生しました")
