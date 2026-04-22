@@ -75,9 +75,16 @@ elif st.session_state.page == "attendance":
             post_data = {"token": MY_TOKEN, "station": selected_station, "name": st.session_state.user_name, "status": status, "location": location_data}
             with st.spinner("送信中..."):
                 try:
-                    requests.post(GAS_URL, json=post_data, timeout=10)
-                    st.success(f"{status}完了！")
-                    st.balloons()
+                    res = requests.post(GAS_URL, json=post_data, timeout=10)
+                    res_data = res.json()
+                    if "error" in res_data:
+                        if res_data.get("error") == "ALREADY_DONE":
+                            st.warning(res_data.get("message"))
+                        else:
+                            st.error(f"エラー: {res_data.get('message', '送信失敗')}")
+                    else:
+                        st.success(f"{status}完了！")
+                        st.balloons()
                 except:
                     st.error("送信に失敗しました")
         with col1:
@@ -128,11 +135,10 @@ elif st.session_state.page == "reward":
                             with st.spinner("送信中..."):
                                 try:
                                     res_upd = requests.post(GAS_URL, json=invoice_data, timeout=30)
-                                    # 余計な変数は探さず、成功したかどうかだけをチェック
                                     if res_upd.json().get("status") == "success":
                                         st.success("送信が完了しました。")
                                     else:
-                                        st.error("送信に失敗しました。管理者に連絡してください。")
+                                        st.error("送信に失敗しました。")
                                 except:
                                     st.error("通信エラーが発生しました。")
                 else:
