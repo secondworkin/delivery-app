@@ -41,7 +41,7 @@ if "user_name" not in st.session_state:
     user_id = st.text_input("割り当てられたIDを入力してください", key="login_id")
     if st.button("ログイン"):
         if user_id:
-            with st.spinner("サーバーを叩き起こしています..."):
+            with st.spinner("認証情報を確認しています..."):
                 try:
                     # 【重要】本番通信の前に、GASを「起こす」ための挨拶を1回投げる
                     try:
