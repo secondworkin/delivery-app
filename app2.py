@@ -5,22 +5,25 @@ import pandas as pd
 from datetime import datetime
 from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
+import time
 
 # --- 設定 ---
 GAS_URL = st.secrets["GAS_URL"]
 MY_TOKEN = st.secrets["MY_TOKEN"]
 
-# --- 通信エラー対策：最強リトライ設定（セッションをキャッシュして安定化） ---
+# --- 通信セッションの最強設定（キャッシュ化） ---
 @st.cache_resource
 def get_ultimate_session():
     session = requests.Session()
     retries = Retry(
-        total=5,               # 最大5回まで粘り強くリトライ
-        backoff_factor=2,      # 失敗するごとに待機時間を 2s, 4s, 8s... と増やしてGASの起動を待つ
-        status_forcelist=[429, 500, 502, 503, 504], # サーバーエラー時にリトライ
+        total=5,                # 最大5回まで粘る
+        backoff_factor=1,       # 待機時間を1s, 2s, 4s...と増やしてGASの起動を待つ
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET", "POST"], # GETもPOSTもしっかりリトライ
         raise_on_status=False
     )
-    adapter = HTTPAdapter(max_retries=retries)
+    # 接続・読み取りの両方にリトライを適用
+    adapter = HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10)
     session.mount("https://", adapter)
     session.mount("http://", adapter)
     return session
@@ -38,20 +41,31 @@ if "user_name" not in st.session_state:
     user_id = st.text_input("割り当てられたIDを入力してください", key="login_id")
     if st.button("ログイン"):
         if user_id:
-            with st.spinner("サーバーを呼び出しています... (最大20秒)"):
+            with st.spinner("サーバーを叩き起こしています..."):
                 try:
-                    # timeoutを20秒に延長し、強化セッションを使用
-                    res = session.get(GAS_URL, params={"id": user_id, "token": MY_TOKEN}, timeout=20)
+                    # 【重要】本番通信の前に、GASを「起こす」ための挨拶を1回投げる
+                    try:
+                        session.get(GAS_URL, params={"ping": "pong"}, timeout=3)
+                    except:
+                        pass # ここでのエラーは無視して本番へ進む
+                    
+                    time.sleep(1) # 1秒だけ待ってから本番
+                    
+                    # 本番の認証通信
+                    res = session.get(GAS_URL, params={"id": user_id, "token": MY_TOKEN}, timeout=25)
                     data = res.json()
+                    
                     if "error" not in data:
                         st.session_state.user_name = data["name"]
                         st.session_state.my_stations = data["stations"]
                         st.session_state.page = "menu"
                         st.rerun()
                     else:
-                        st.error("IDが正しくありません")
-                except:
-                    st.error("通信がタイムアウトしました。もう一度ログインを押してください。")
+                        st.error(f"ログイン失敗: {data.get('error')}")
+                except Exception as e:
+                    # 3秒で切れる現象対策：エラーになっても「もう一度だけ」を促す
+                    st.error("通信が一時的に遮断されました。もう一度「ログイン」を押してください。")
+                    st.info("※GASの起動に時間がかかっています。2回目以降はスムーズに入れます。")
         else:
             st.warning("IDを入力してください")
     st.stop()
@@ -105,7 +119,7 @@ elif st.session_state.page == "attendance":
             
             with st.spinner("送信中..."):
                 try:
-                    res = session.post(GAS_URL, json=post_data, timeout=20)
+                    res = session.post(GAS_URL, json=post_data, timeout=25)
                     res_data = res.json()
                     
                     if "error" in res_data:
@@ -139,7 +153,7 @@ elif st.session_state.page == "reward":
 
     with st.spinner("データを集計中..."):
         try:
-            res = session.get(GAS_URL, params={"token": MY_TOKEN, "action": "get_logs", "stations": ",".join(st.session_state.my_stations)}, timeout=20)
+            res = session.get(GAS_URL, params={"token": MY_TOKEN, "action": "get_logs", "stations": ",".join(st.session_state.my_stations)}, timeout=25)
             logs = res.json().get("logs", [])
             if logs:
                 df = pd.DataFrame(logs, columns=["日時", "名前", "状態", "グループ", "金額", "場所"])
