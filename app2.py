@@ -42,6 +42,7 @@ if "user_name" not in st.session_state:
         if user_id:
             with st.spinner("認証情報を確認しています..."):
                 try:
+                    # GASを起こす（Wake up）
                     try:
                         session.get(GAS_URL, params={"ping": "pong"}, timeout=3)
                     except:
@@ -55,7 +56,6 @@ if "user_name" not in st.session_state:
                     if "error" not in data:
                         st.session_state.user_name = data["name"]
                         st.session_state.my_stations = data["stations"]
-                        # 管理者フラグをセッションに保存
                         st.session_state.is_admin = data.get("isAdmin", False)
                         st.session_state.page = "menu"
                         st.rerun()
@@ -77,7 +77,6 @@ if st.session_state.page == "menu":
     st.title("📱 メインメニュー")
     st.write(f"こんにちは、 **{st.session_state.user_name}** さん")
     
-    # 管理者・社員の場合のみ「管理者メニュー」を表示
     if st.session_state.is_admin:
         st.info("💡 管理者・社員メニューが利用可能です")
         if st.button("📝 ホワイトボード（動態管理）", use_container_width=True):
@@ -95,7 +94,7 @@ if st.session_state.page == "menu":
     if st.button("🚪 ログアウト"):
         logout()
 
-# --- 新設：ホワイトボード画面 ---
+# --- 4. ホワイトボード画面（修正版） ---
 elif st.session_state.page == "whiteboard":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
@@ -103,20 +102,26 @@ elif st.session_state.page == "whiteboard":
     
     st.title("📝 ホワイトボード")
     
-    # 入力セクション
     with st.expander("自分の動きを更新する", expanded=True):
         new_content = st.text_input("現在の業務内容を入力", placeholder="例：〇〇で営業 16時帰社予定")
         if st.button("ホワイトボードを更新"):
             if new_content:
                 with st.spinner("更新中..."):
                     try:
+                        # 通信エラー対策：送信前にGASを起こす
+                        try:
+                            session.get(GAS_URL, params={"ping": "pong"}, timeout=3)
+                        except:
+                            pass
+                        time.sleep(1)
+
                         post_data = {
                             "action": "update_whiteboard",
                             "token": MY_TOKEN,
                             "name": st.session_state.user_name,
                             "content": new_content
                         }
-                        res = session.post(GAS_URL, json=post_data, timeout=20)
+                        res = session.post(GAS_URL, json=post_data, timeout=25)
                         if res.json().get("status") == "success":
                             st.success("更新しました")
                             time.sleep(1)
@@ -124,11 +129,11 @@ elif st.session_state.page == "whiteboard":
                         else:
                             st.error("名簿に名前が見つからないため更新できませんでした")
                     except:
-                        st.error("通信エラーが発生しました")
+                        # 通信エラーが出ても書き込めている場合が多いため、警告に留める
+                        st.warning("通信が不安定です。下の表を更新して確認してください。")
             else:
                 st.warning("内容を入力してください")
 
-    # 閲覧セクション
     st.subheader("現在の社員の動き")
     with st.spinner("最新情報を取得中..."):
         try:
@@ -136,13 +141,24 @@ elif st.session_state.page == "whiteboard":
             board_data = res.json().get("board", [])
             if board_data:
                 df_wb = pd.DataFrame(board_data, columns=["氏名", "業務内容", "最終更新"])
-                st.table(df_wb) # ホワイトボードらしく一覧表で表示
+                
+                # 時刻表記の修正（月/日 時:分）
+                def format_date(x):
+                    try:
+                        if not x or x == "": return ""
+                        dt = pd.to_datetime(x)
+                        return dt.strftime('%m/%d %H:%M')
+                    except:
+                        return x
+
+                df_wb["最終更新"] = df_wb["最終更新"].apply(format_date)
+                st.table(df_wb)
             else:
                 st.info("掲示板にデータがありません")
         except:
             st.error("データの読み込みに失敗しました")
 
-# --- 4. 出退勤画面（既存） ---
+# --- 5. 出退勤画面 ---
 elif st.session_state.page == "attendance":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
@@ -171,6 +187,11 @@ elif st.session_state.page == "attendance":
             
             with st.spinner("送信中..."):
                 try:
+                    # 予備通信
+                    try: session.get(GAS_URL, params={"ping": "pong"}, timeout=3)
+                    except: pass
+                    time.sleep(1)
+
                     res = session.post(GAS_URL, json=post_data, timeout=25)
                     res_data = res.json()
                     
@@ -192,7 +213,7 @@ elif st.session_state.page == "attendance":
     else:
         st.error("担当現場が登録されていません。")
 
-# --- 5. 報酬確定額の確認画面（既存） ---
+# --- 6. 報酬確定額の確認画面 ---
 elif st.session_state.page == "reward":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
