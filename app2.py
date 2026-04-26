@@ -54,7 +54,6 @@ if "user_name" not in st.session_state:
         if user_id:
             with st.spinner("認証情報を確認しています..."):
                 try:
-                    # 認証のみ実行
                     res = session.get(GAS_URL, params={"id": user_id, "token": MY_TOKEN}, timeout=30)
                     data = res.json()
                     
@@ -119,14 +118,14 @@ elif st.session_state.page == "whiteboard":
                             "name": st.session_state.user_name,
                             "content": new_content
                         }
-                        # 書き込みのみ実行
+                        # 1. 送信のみ実行（余計な通信は挟まない）
                         res = session.post(GAS_URL, json=post_data, timeout=45)
                         
                         if res.json().get("status") == "success":
-                            st.success("更新しました。下の「🔄最新の状態に更新」ボタンで確認してください。")
-                            # ★自動リロード（rerun）を廃止。これで通信事故を防ぐ。
+                            # 2. 自動rerunはさせず、成功メッセージを出すだけにする
+                            st.success("サーバーへの書き込みが完了しました。下のボタンで最新状態を確認してください。")
                         else:
-                            st.error("更新できませんでした。名簿を確認してください。")
+                            st.error("更新に失敗しました。")
                     except:
                         st.error("通信エラーが発生しました。")
             else:
@@ -135,11 +134,11 @@ elif st.session_state.page == "whiteboard":
     st.markdown("---")
     st.subheader("現在の社員の動き")
     
-    # ★手動更新ボタン：これだけを独立させることで、書き込み通信とぶつからないようにする
+    # 3. 手動更新ボタン：最新を見たい時だけこれを押す（書き込み処理と完全に分離）
     if st.button("🔄 最新の状態に更新", use_container_width=True):
         st.rerun()
 
-    with st.spinner("データを読み込んでいます..."):
+    with st.spinner("最新情報を取得中..."):
         try:
             res = session.get(GAS_URL, params={"action": "get_whiteboard", "token": MY_TOKEN}, timeout=30)
             board_data = res.json().get("board", [])
@@ -150,7 +149,7 @@ elif st.session_state.page == "whiteboard":
             else:
                 st.info("掲示板にデータがありません")
         except:
-            st.error("データの読み込みに失敗しました。電波の良い場所で更新ボタンを押してください。")
+            st.error("データの読み込みに失敗しました。更新ボタンを押し直してください。")
 
 # --- 5. 出退勤画面 ---
 elif st.session_state.page == "attendance":
@@ -189,8 +188,6 @@ elif st.session_state.page == "attendance":
                     else:
                         st.success(f"{status}完了！")
                         st.balloons()
-                        # 打刻はメニューに戻るなどのアクションが伴うことが多いため、
-                        # ここでも自動rerunはせず、成功表示を維持します。
                 except:
                     st.error("通信エラーが発生しました。")
 
