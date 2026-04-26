@@ -16,7 +16,7 @@ MY_TOKEN = st.secrets["MY_TOKEN"]
 def get_ultimate_session():
     session = requests.Session()
     retries = Retry(
-        total=3, # リトライ回数を少し絞って「いつまでもグルグル」を防止
+        total=3, 
         backoff_factor=1,
         status_forcelist=[429, 500, 502, 503, 504],
         allowed_methods=["GET", "POST"],
@@ -39,9 +39,7 @@ def format_date_jp(x):
     try:
         if not x or x == "": return ""
         dt = pd.to_datetime(x)
-        # タイムゾーン情報がない、またはUTC（0時付近）と判定される場合の補正
         if dt.tzinfo is None or "Z" in str(x):
-             # 0時〜9時台で送られてきた場合、時差を考慮して+9時間
              if dt.hour < 9:
                  dt = dt + timedelta(hours=9)
         return dt.strftime('%m/%d %H:%M')
@@ -56,15 +54,11 @@ if "user_name" not in st.session_state:
         if user_id:
             with st.spinner("認証情報を確認しています..."):
                 try:
-                    # Wake up
                     try: session.get(GAS_URL, params={"ping": "pong"}, timeout=5)
                     except: pass
-                    
                     time.sleep(1.5)
-                    
                     res = session.get(GAS_URL, params={"id": user_id, "token": MY_TOKEN}, timeout=30)
                     data = res.json()
-                    
                     if "error" not in data:
                         st.session_state.user_name = data["name"]
                         st.session_state.my_stations = data["stations"]
@@ -73,7 +67,7 @@ if "user_name" not in st.session_state:
                         st.rerun()
                     else:
                         st.error(f"ログイン失敗: {data.get('error')}")
-                except Exception as e:
+                except Exception:
                     st.error("通信が一時的に遮断されました。もう一度お試しください。")
         else:
             st.warning("IDを入力してください")
@@ -88,13 +82,11 @@ def logout():
 if st.session_state.page == "menu":
     st.title("📱 メインメニュー")
     st.write(f"こんにちは、 **{st.session_state.user_name}** さん")
-    
     if st.session_state.is_admin:
         st.info("💡 管理者・社員メニューが利用可能です")
         if st.button("📝 ホワイトボード（動態管理）", use_container_width=True):
             st.session_state.page = "whiteboard"
             st.rerun()
-
     st.markdown("---")
     if st.button("⏰ 出退勤（打刻）", use_container_width=True, type="primary"):
         st.session_state.page = "attendance"
@@ -113,7 +105,6 @@ elif st.session_state.page == "whiteboard":
         st.rerun()
     
     st.title("📝 ホワイトボード")
-    
     with st.expander("自分の動きを更新する", expanded=True):
         new_content = st.text_input("現在の業務内容を入力", placeholder="例：〇〇で営業 16時帰社予定")
         if st.button("ホワイトボードを更新"):
@@ -127,17 +118,15 @@ elif st.session_state.page == "whiteboard":
                             "content": new_content
                         }
                         res = session.post(GAS_URL, json=post_data, timeout=40)
-                        
                         if res.json().get("status") == "success":
-                            st.success("更新しました")
-                            # ここで3秒待つことでGoogle側の更新を確定させ、読み込みエラーを防ぐ
-                            time.sleep(3) 
+                            st.success("更新に成功しました。まもなく最新の表を読み込みます。")
+                            # ★ここで3秒待ち、Google側の「書き込み保存」を確実にする
+                            time.sleep(3)
                             st.rerun()
                         else:
                             st.error("名簿に名前が見つからないため更新できませんでした")
                     except requests.exceptions.Timeout:
-                        # タイムアウトしても裏で書き込めている場合が多い
-                        st.warning("通信応答が遅れていますが、書き込みは実行されています。数秒後に表を確認してください。")
+                        st.warning("通信応答が遅れていますが、書き込みは実行されています。3秒後に自動で表を確認します。")
                         time.sleep(3)
                         st.rerun()
                     except:
@@ -157,7 +146,7 @@ elif st.session_state.page == "whiteboard":
             else:
                 st.info("掲示板にデータがありません")
         except:
-            st.error("データの読み込みに失敗しました")
+            st.error("最新データの読み込みに失敗しました。時間をおいて再試行してください。")
 
 # --- 5. 出退勤画面 ---
 elif st.session_state.page == "attendance":
@@ -171,41 +160,26 @@ elif st.session_state.page == "attendance":
         if len(st.session_state.my_stations) == 1: st.info(f"現場： **{selected_station}**")
         
         col1, col2 = st.columns(2)
-        
         def send_data(status):
             location_data = "GPS取得失敗"
             if loc:
                 lat, lon = loc['coords']['latitude'], loc['coords']['longitude']
                 location_data = f"https://www.google.com/maps?q={lat},{lon}"
-            
-            post_data = {
-                "token": MY_TOKEN, 
-                "station": selected_station, 
-                "name": st.session_state.user_name, 
-                "status": status, 
-                "location": location_data
-            }
-            
+            post_data = {"token": MY_TOKEN, "station": selected_station, "name": st.session_state.user_name, "status": status, "location": location_data}
             with st.spinner("送信中..."):
                 try:
-                    # 予備通信
-                    try: session.get(GAS_URL, params={"ping": "pong"}, timeout=5)
-                    except: pass
-                    time.sleep(1.5)
-
                     res = session.post(GAS_URL, json=post_data, timeout=40)
                     res_data = res.json()
-                    
                     if "error" in res_data:
-                        if res_data.get("error") == "ALREADY_DONE":
-                            st.warning(res_data.get("message"))
-                        else:
-                            st.error(f"エラー: {res_data.get('message', '送信失敗')}")
+                        st.error(res_data.get('message', '送信失敗'))
                     else:
                         st.success(f"{status}完了！")
                         st.balloons()
+                        # ★打刻後も3秒待機してからリロード（記録の反映漏れを防ぐ）
+                        time.sleep(3)
+                        st.rerun()
                 except requests.exceptions.Timeout:
-                    st.warning("通信が混み合っています。Googleスプレッドシートに反映されているか確認してください。")
+                    st.warning("処理が混み合っています。記録が反映されているか後ほど確認してください。")
                 except:
                     st.error("通信エラーが発生しました。")
 
@@ -213,8 +187,6 @@ elif st.session_state.page == "attendance":
             if st.button("出勤する", use_container_width=True, type="primary"): send_data("出勤")
         with col2:
             if st.button("退勤する", use_container_width=True): send_data("退勤")
-    else:
-        st.error("担当現場が登録されていません。")
 
 # --- 6. 報酬確定額の確認画面 ---
 elif st.session_state.page == "reward":
@@ -222,11 +194,9 @@ elif st.session_state.page == "reward":
         st.session_state.page = "menu"
         st.rerun()
     st.title("💰 報酬確定額")
-    
     now = datetime.now()
     month_options = [f"{(now.year + (now.month - i - 1) // 12)}/{(now.month - i - 1) % 12 + 1:02d}" for i in range(5)]
     selected_month = st.selectbox("表示する月を選択", month_options)
-
     with st.spinner("データを集計中..."):
         try:
             res = session.get(GAS_URL, params={"token": MY_TOKEN, "action": "get_logs", "stations": ",".join(st.session_state.my_stations)}, timeout=40)
@@ -236,42 +206,12 @@ elif st.session_state.page == "reward":
                 df["日時_dt"] = pd.to_datetime(df["日時"])
                 target_y, target_m = map(int, selected_month.split("/"))
                 my_df = df[(df["名前"] == st.session_state.user_name) & (df["金額"] != "") & (df["日時_dt"].dt.year == target_y) & (df["日時_dt"].dt.month == target_m)].copy()
-                
                 if not my_df.empty:
                     my_df["現場"] = my_df["グループ"].apply(lambda x: str(x)[:-1])
                     st.metric(f"{selected_month} の合計報酬", f"{pd.to_numeric(my_df['金額']).sum():,} 円")
                     my_df["表示日時"] = my_df["日時_dt"].apply(format_date_jp)
                     st.dataframe(my_df[["表示日時", "現場", "金額"]], use_container_width=True, hide_index=True)
-
-                    st.markdown("---")
-                    st.subheader("📄 請求書情報の申請")
-                    zip_code = st.text_input("郵便番号", placeholder="123-4567")
-                    address = st.text_input("住所", placeholder="石川県金沢市...")
-                    bank_info = st.text_input("振込先口座", placeholder="〇〇銀行 支店 普通 1234567")
-                    
-                    if st.button("請求書データを送信する", use_container_width=True, type="primary"):
-                        if not zip_code or not address or not bank_info:
-                            st.warning("情報を入力してください")
-                        else:
-                            invoice_data = {
-                                "action": "create_pdf", 
-                                "token": MY_TOKEN, 
-                                "name": st.session_state.user_name, 
-                                "zip": zip_code, 
-                                "address": address, 
-                                "bank": bank_info, 
-                                "logs": my_df[["日時", "現場", "金額"]].to_dict(orient="records")
-                            }
-                            with st.spinner("送信中..."):
-                                try:
-                                    res_upd = session.post(GAS_URL, json=invoice_data, timeout=45)
-                                    if res_upd.json().get("status") == "success":
-                                        st.success("送信が完了しました。")
-                                    else:
-                                        st.error("送信に失敗しました。")
-                                except:
-                                    st.error("通信エラーが発生しました。")
                 else:
-                    st.info("データがありません")
+                    st.info("この月のデータはありません")
         except:
             st.error("データ取得中にエラーが発生しました")
