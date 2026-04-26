@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 from streamlit_js_eval import get_geolocation
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
@@ -16,7 +16,7 @@ MY_TOKEN = st.secrets["MY_TOKEN"]
 def get_ultimate_session():
     session = requests.Session()
     retries = Retry(
-        total=5,
+        total=3, # リトライ回数を少し絞って「いつまでもグルグル」を防止
         backoff_factor=1,
         status_forcelist=[429, 500, 502, 503, 504],
         allowed_methods=["GET", "POST"],
@@ -38,12 +38,12 @@ if "page" not in st.session_state:
 def format_date_jp(x):
     try:
         if not x or x == "": return ""
-        # 文字列を日時に変換
         dt = pd.to_datetime(x)
-        # タイムゾーン情報がない（またはUTCと誤認される）場合、+9時間して日本時間に固定
-        if dt.tzinfo is None or dt.hour < 9: # 取得した値が明らかにUTC（朝方）の場合は補正
-             # GAS側でyyyy-MM-dd HH:mm:ssで送るようにしたので、ここで再計算
-             pass 
+        # タイムゾーン情報がない、またはUTC（0時付近）と判定される場合の補正
+        if dt.tzinfo is None or "Z" in str(x):
+             # 0時〜9時台で送られてきた場合、時差を考慮して+9時間
+             if dt.hour < 9:
+                 dt = dt + timedelta(hours=9)
         return dt.strftime('%m/%d %H:%M')
     except:
         return x
@@ -56,15 +56,12 @@ if "user_name" not in st.session_state:
         if user_id:
             with st.spinner("認証情報を確認しています..."):
                 try:
-                    # GASを起こす（Wake up）
-                    try:
-                        session.get(GAS_URL, params={"ping": "pong"}, timeout=5)
-                    except:
-                        pass
+                    # Wake up
+                    try: session.get(GAS_URL, params={"ping": "pong"}, timeout=5)
+                    except: pass
                     
-                    time.sleep(1.5) # GASが立ち上がるのを少し待つ
+                    time.sleep(1.5)
                     
-                    # ログイン照会
                     res = session.get(GAS_URL, params={"id": user_id, "token": MY_TOKEN}, timeout=30)
                     data = res.json()
                     
@@ -77,7 +74,7 @@ if "user_name" not in st.session_state:
                     else:
                         st.error(f"ログイン失敗: {data.get('error')}")
                 except Exception as e:
-                    st.error("通信が一時的に遮断されました。もう一度「ログイン」を押してください。")
+                    st.error("通信が一時的に遮断されました。もう一度お試しください。")
         else:
             st.warning("IDを入力してください")
     st.stop()
@@ -123,31 +120,28 @@ elif st.session_state.page == "whiteboard":
             if new_content:
                 with st.spinner("更新中..."):
                     try:
-                        # 予備通信でGASを起こす
-                        try:
-                            session.get(GAS_URL, params={"ping": "pong"}, timeout=5)
-                        except:
-                            pass
-                        time.sleep(1.5)
-
                         post_data = {
                             "action": "update_whiteboard",
                             "token": MY_TOKEN,
                             "name": st.session_state.user_name,
                             "content": new_content
                         }
-                        # 書き込みは時間がかかるためtimeoutを40秒に延長
                         res = session.post(GAS_URL, json=post_data, timeout=40)
                         
                         if res.json().get("status") == "success":
                             st.success("更新しました")
-                            time.sleep(1)
+                            # ここで3秒待つことでGoogle側の更新を確定させ、読み込みエラーを防ぐ
+                            time.sleep(3) 
                             st.rerun()
                         else:
                             st.error("名簿に名前が見つからないため更新できませんでした")
+                    except requests.exceptions.Timeout:
+                        # タイムアウトしても裏で書き込めている場合が多い
+                        st.warning("通信応答が遅れていますが、書き込みは実行されています。数秒後に表を確認してください。")
+                        time.sleep(3)
+                        st.rerun()
                     except:
-                        # 更新自体は成功していることが多いため、警告を出しつつ表を出す
-                        st.warning("通信応答がタイムアウトしました。下の表を見て更新されているか確認してください。")
+                        st.error("通信エラーが発生しました。")
             else:
                 st.warning("内容を入力してください")
 
@@ -158,7 +152,6 @@ elif st.session_state.page == "whiteboard":
             board_data = res.json().get("board", [])
             if board_data:
                 df_wb = pd.DataFrame(board_data, columns=["氏名", "業務内容", "最終更新"])
-                # 時刻を日本時間に整形
                 df_wb["最終更新"] = df_wb["最終更新"].apply(format_date_jp)
                 st.table(df_wb)
             else:
@@ -211,8 +204,10 @@ elif st.session_state.page == "attendance":
                     else:
                         st.success(f"{status}完了！")
                         st.balloons()
+                except requests.exceptions.Timeout:
+                    st.warning("通信が混み合っています。Googleスプレッドシートに反映されているか確認してください。")
                 except:
-                    st.error("通信エラーが発生しました。もう一度お試しください。")
+                    st.error("通信エラーが発生しました。")
 
         with col1:
             if st.button("出勤する", use_container_width=True, type="primary"): send_data("出勤")
@@ -234,7 +229,7 @@ elif st.session_state.page == "reward":
 
     with st.spinner("データを集計中..."):
         try:
-            res = session.get(GAS_URL, params={"token": MY_TOKEN, "action": "get_logs", "stations": ",".join(st.session_state.my_stations)}, timeout=35)
+            res = session.get(GAS_URL, params={"token": MY_TOKEN, "action": "get_logs", "stations": ",".join(st.session_state.my_stations)}, timeout=40)
             logs = res.json().get("logs", [])
             if logs:
                 df = pd.DataFrame(logs, columns=["日時", "名前", "状態", "グループ", "金額", "場所"])
@@ -245,7 +240,6 @@ elif st.session_state.page == "reward":
                 if not my_df.empty:
                     my_df["現場"] = my_df["グループ"].apply(lambda x: str(x)[:-1])
                     st.metric(f"{selected_month} の合計報酬", f"{pd.to_numeric(my_df['金額']).sum():,} 円")
-                    # 時刻表示を整形
                     my_df["表示日時"] = my_df["日時_dt"].apply(format_date_jp)
                     st.dataframe(my_df[["表示日時", "現場", "金額"]], use_container_width=True, hide_index=True)
 
@@ -270,7 +264,7 @@ elif st.session_state.page == "reward":
                             }
                             with st.spinner("送信中..."):
                                 try:
-                                    res_upd = session.post(GAS_URL, json=invoice_data, timeout=40)
+                                    res_upd = session.post(GAS_URL, json=invoice_data, timeout=45)
                                     if res_upd.json().get("status") == "success":
                                         st.success("送信が完了しました。")
                                     else:
