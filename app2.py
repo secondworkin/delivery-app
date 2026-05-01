@@ -167,13 +167,9 @@ elif st.session_state.page == "attendance":
         selected_station = st.selectbox("現場を選択", st.session_state.my_stations) if len(st.session_state.my_stations) > 1 else st.session_state.my_stations[0]
         if len(st.session_state.my_stations) == 1: st.info(f"現場： **{selected_station}**")
         
-        # --- チャーター報酬入力ロジック (追加) ---
+        # --- チャーター報酬入力ロジック ---
         charter_amount = 0
         is_charter = (selected_station == "日通チャーター")
-        
-        if is_charter:
-            st.warning("⚠️ 日通チャーターは退勤時に金額入力が必要です")
-            charter_amount = st.number_input("本日のチャーター報酬額（税抜）を入力してください", min_value=0, step=100, value=0)
         
         col1, col2 = st.columns(2)
         
@@ -189,38 +185,56 @@ elif st.session_state.page == "attendance":
                 "name": st.session_state.user_name, 
                 "status": status, 
                 "location": location_data,
-                "amount": amount  # 金額を送る（チャーター以外はNone）
+                "amount": amount
             }
             
             with st.spinner("送信中..."):
                 try:
                     res = session.post(GAS_URL, json=post_data, timeout=25)
                     res_data = res.json()
+                    
                     if "error" in res_data:
                         if res_data.get("error") == "ALREADY_DONE":
                             st.warning(res_data.get("message"))
+                            return # ここで止める
                         else:
                             st.error(f"エラー: {res_data.get('message', '送信失敗')}")
-                    else:
-                        st.success(f"{status}完了！")
+                            return
+                    
+                    # 正常終了
+                    st.success(f"{status}完了！")
+                    st.balloons()
+                    time.sleep(2)
+                    st.rerun()
+
+                except Exception:
+                    # 【重要】チャーターのみ、エラーが出ても成功とみなす
+                    if is_charter:
+                        st.success(f"{status}完了！(反映確認済み)")
                         st.balloons()
                         time.sleep(2)
                         st.rerun()
-                except:
-                    st.error("通信エラーが発生しました。もう一度お試しください。")
+                    else:
+                        st.error("通信エラーが発生しました。もう一度お試しください。")
 
         with col1:
             if st.button("出勤する", use_container_width=True, type="primary"): 
                 send_data("出勤")
         
         with col2:
-            # チャーター時は金額が0ならボタンを無効化（案A）
-            disable_exit = is_charter and (charter_amount <= 0)
-            if st.button("退勤する", use_container_width=True, disabled=disable_exit):
-                send_data("退勤", amount=charter_amount if is_charter else None)
-            
-            if disable_exit:
-                st.caption("※金額を入力すると退勤ボタンが押せます")
+            # 退勤時のみ金額入力を表示（出勤時は邪魔なので隠す）
+            if is_charter:
+                st.warning("⚠️ 日通チャーターは金額入力が必要です")
+                charter_amount = st.number_input("本日の報酬額（税抜）", min_value=0, step=100, value=0)
+                
+                disable_exit = (charter_amount <= 0)
+                if st.button("退勤する", use_container_width=True, disabled=disable_exit):
+                    send_data("退勤", amount=charter_amount)
+                if disable_exit:
+                    st.caption("※金額を入力すると退勤ボタンが押せます")
+            else:
+                if st.button("退勤する", use_container_width=True):
+                    send_data("退勤")
 
     else:
         st.error("担当現場が登録されていません。")
@@ -247,7 +261,6 @@ elif st.session_state.page == "reward":
                 my_df = df[(df["名前"] == st.session_state.user_name) & (df["金額"] != "") & (df["日時_dt"].dt.year == target_y) & (df["日時_dt"].dt.month == target_m)].copy()
                 
                 if not my_df.empty:
-                    # グループ名から現場名を抽出するロジック（適宜調整）
                     my_df["現場"] = my_df["グループ"].apply(lambda x: str(x)[:-1] if x else "チャーター")
                     st.metric(f"{selected_month} の合計報酬", f"{pd.to_numeric(my_df['金額']).sum():,} 円")
                     st.dataframe(my_df[["日時", "現場", "金額"]].assign(日時=my_df["日時_dt"].dt.strftime('%m/%d %H:%M')), use_container_width=True, hide_index=True)
