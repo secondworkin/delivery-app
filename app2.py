@@ -224,7 +224,7 @@ elif st.session_state.page == "attendance":
         with col2:
             # 退勤時のみ金額入力を表示（出勤時は邪魔なので隠す）
             if is_charter:
-                st.warning("⚠️ 日通チャーターは金額入力が必要です")
+                st.warning("⚠️ 退勤するには金額入力が必要です")
                 charter_amount = st.number_input("本日の報酬額（税抜）", min_value=0, step=100, value=0)
                 
                 disable_exit = (charter_amount <= 0)
