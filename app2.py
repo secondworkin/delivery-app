@@ -94,7 +94,7 @@ if st.session_state.page == "menu":
         if st.button("📝 ホワイトボード（動態管理）", use_container_width=True):
             st.session_state.page = "whiteboard"
             st.rerun()
-        # --- 【追加】出退勤管理ボタン ---
+        # --- 出退勤管理ボタン ---
         if st.button("📊 出退勤管理（未打刻確認）", use_container_width=True):
             st.session_state.page = "absent_check"
             st.rerun()
@@ -159,34 +159,55 @@ elif st.session_state.page == "whiteboard":
         except:
             st.error("データの読み込みに失敗しました。")
 
-# --- 【新設】7. 出退勤管理（あぶり出し）画面 ---
+# --- 7. 出退勤管理（あぶり出し）画面 ---
 elif st.session_state.page == "absent_check":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
         st.rerun()
     
     st.title("📊 出退勤管理")
-    st.subheader("本日の未打刻者リスト")
-    st.write("シフト表に現場が入っているが、まだ「出勤」打刻がない人を表示します。")
+    st.write("シフト表と照合し、未打刻のドライバーを抽出します。")
 
-    if st.button("🔄 最新の未打刻状況を確認", use_container_width=True, type="primary"):
-        with st.spinner("シフト表と照合中..."):
-            try:
-                res = session.get(GAS_URL, params={"action": "get_absent", "token": MY_TOKEN}, timeout=30)
-                data = res.json()
-                absent_list = data.get("absent_list", [])
-                
-                if absent_list:
-                    df_absent = pd.DataFrame(absent_list)
-                    df_absent.columns = ["氏名", "予定現場"]
-                    st.warning(f"現在、{len(df_absent)} 名の出勤打刻が確認できていません。")
-                    st.table(df_absent)
-                else:
-                    st.success("🎉 全員の出勤打刻が完了しています！")
-                    if "msg" in data:
-                        st.info(f"補足情報: {data['msg']}")
-            except Exception as e:
-                st.error(f"データ取得に失敗しました。時間をおいて再度お試しください。")
+    col1, col2 = st.columns(2)
+
+    # --- ボタン１：出勤未打刻 ---
+    with col1:
+        if st.button("最新の出勤未打刻者一覧", use_container_width=True, type="primary"):
+            with st.spinner("出勤状況を照合中..."):
+                try:
+                    res = session.get(GAS_URL, params={"action": "get_absent", "status": "absent", "token": MY_TOKEN}, timeout=30)
+                    data = res.json()
+                    absent_list = data.get("absent_list", [])
+                    st.subheader("📌 出勤未打刻")
+                    if absent_list:
+                        df_absent = pd.DataFrame(absent_list)
+                        df_absent.columns = ["氏名", "予定現場"]
+                        st.warning(f"{len(df_absent)} 名が未出勤です。")
+                        st.table(df_absent)
+                    else:
+                        st.success("全員の出勤を確認済みです。")
+                except:
+                    st.error("データ取得に失敗しました。")
+
+    # --- ボタン２：退勤未打刻 ---
+    with col2:
+        if st.button("最新の退勤未打刻者一覧", use_container_width=True):
+            with st.spinner("退勤状況を照合中..."):
+                try:
+                    # statusに "not_left" を指定してリクエスト
+                    res = session.get(GAS_URL, params={"action": "get_absent", "status": "not_left", "token": MY_TOKEN}, timeout=30)
+                    data = res.json()
+                    absent_list = data.get("absent_list", [])
+                    st.subheader("📌 退勤未打刻")
+                    if absent_list:
+                        df_absent = pd.DataFrame(absent_list)
+                        df_absent.columns = ["氏名", "稼働中現場"]
+                        st.info(f"{len(df_absent)} 名がまだ退勤していません。")
+                        st.table(df_absent)
+                    else:
+                        st.success("本日の全稼働が終了しています。")
+                except:
+                    st.error("データ取得に失敗しました。")
 
 # --- 5. 出退勤画面 ---
 elif st.session_state.page == "attendance":
@@ -200,7 +221,6 @@ elif st.session_state.page == "attendance":
         selected_station = st.selectbox("現場を選択", st.session_state.my_stations) if len(st.session_state.my_stations) > 1 else st.session_state.my_stations[0]
         if len(st.session_state.my_stations) == 1: st.info(f"現場： **{selected_station}**")
         
-        # --- チャーター報酬入力ロジック ---
         charter_amount = 0
         is_charter = (selected_station == "日通チャーター")
         
@@ -229,46 +249,38 @@ elif st.session_state.page == "attendance":
                     if "error" in res_data:
                         if res_data.get("error") == "ALREADY_DONE":
                             st.warning(res_data.get("message"))
-                            return # ここで止める
+                            return
                         else:
                             st.error(f"エラー: {res_data.get('message', '送信失敗')}")
                             return
                     
-                    # 正常終了
                     st.success(f"{status}完了！")
                     st.balloons()
                     time.sleep(2)
                     st.rerun()
-
                 except Exception:
-                    # 【重要】チャーターのみ、エラーが出ても成功とみなす
                     if is_charter:
                         st.success(f"{status}完了！(反映確認済み)")
                         st.balloons()
                         time.sleep(2)
                         st.rerun()
                     else:
-                        st.error("通信エラーが発生しました。もう一度お試しください。")
+                        st.error("通信エラーが発生しました。")
 
         with col1:
             if st.button("出勤する", use_container_width=True, type="primary"): 
                 send_data("出勤")
         
         with col2:
-            # 退勤時のみ金額入力を表示（出勤時は邪魔なので隠す）
             if is_charter:
-                st.warning("⚠️ 退勤するには金額入力が必要です")
+                st.warning("⚠️ 金額入力が必要です")
                 charter_amount = st.number_input("本日の報酬額（税抜）", min_value=0, step=100, value=0)
-                
                 disable_exit = (charter_amount <= 0)
                 if st.button("退勤する", use_container_width=True, disabled=disable_exit):
                     send_data("退勤", amount=charter_amount)
-                if disable_exit:
-                    st.caption("※金額を入力すると退勤ボタンが押せます")
             else:
                 if st.button("退勤する", use_container_width=True):
                     send_data("退勤")
-
     else:
         st.error("担当現場が登録されていません。")
 
