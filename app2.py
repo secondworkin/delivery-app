@@ -94,6 +94,10 @@ if st.session_state.page == "menu":
         if st.button("📝 ホワイトボード（動態管理）", use_container_width=True):
             st.session_state.page = "whiteboard"
             st.rerun()
+        # --- 【追加】出退勤管理ボタン ---
+        if st.button("📊 出退勤管理（未打刻確認）", use_container_width=True):
+            st.session_state.page = "absent_check"
+            st.rerun()
 
     st.markdown("---")
     if st.button("⏰ 出退勤（打刻）", use_container_width=True, type="primary"):
@@ -154,6 +158,35 @@ elif st.session_state.page == "whiteboard":
                 st.info("掲示板にデータがありません")
         except:
             st.error("データの読み込みに失敗しました。")
+
+# --- 【新設】7. 出退勤管理（あぶり出し）画面 ---
+elif st.session_state.page == "absent_check":
+    if st.button("⬅️ メニューに戻る"):
+        st.session_state.page = "menu"
+        st.rerun()
+    
+    st.title("📊 出退勤管理")
+    st.subheader("本日の未打刻者リスト")
+    st.write("シフト表に現場が入っているが、まだ「出勤」打刻がない人を表示します。")
+
+    if st.button("🔄 最新の未打刻状況を確認", use_container_width=True, type="primary"):
+        with st.spinner("シフト表と照合中..."):
+            try:
+                res = session.get(GAS_URL, params={"action": "get_absent", "token": MY_TOKEN}, timeout=30)
+                data = res.json()
+                absent_list = data.get("absent_list", [])
+                
+                if absent_list:
+                    df_absent = pd.DataFrame(absent_list)
+                    df_absent.columns = ["氏名", "予定現場"]
+                    st.warning(f"現在、{len(df_absent)} 名の出勤打刻が確認できていません。")
+                    st.table(df_absent)
+                else:
+                    st.success("🎉 全員の出勤打刻が完了しています！")
+                    if "msg" in data:
+                        st.info(f"補足情報: {data['msg']}")
+            except Exception as e:
+                st.error(f"データ取得に失敗しました。時間をおいて再度お試しください。")
 
 # --- 5. 出退勤画面 ---
 elif st.session_state.page == "attendance":
