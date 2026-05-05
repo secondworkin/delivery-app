@@ -94,21 +94,118 @@ if st.session_state.page == "menu":
         if st.button("📝 ホワイトボード（動態管理）", use_container_width=True):
             st.session_state.page = "whiteboard"
             st.rerun()
-        # --- 出退勤管理ボタン ---
         if st.button("📊 出退勤管理（未打刻確認）", use_container_width=True):
             st.session_state.page = "absent_check"
             st.rerun()
 
     st.markdown("---")
+    # メニュー順番変更：出退勤 -> チャーター案件 -> 報酬
     if st.button("⏰ 出退勤（打刻）", use_container_width=True, type="primary"):
         st.session_state.page = "attendance"
         st.rerun()
+
+    if st.button("🚚 チャーター案件 確認・応募", use_container_width=True):
+        st.session_state.page = "charter_page"
+        st.rerun()
+
     if st.button("💰 報酬確定額の確認", use_container_width=True):
         st.session_state.page = "reward"
         st.rerun()
+
     st.markdown("---")
     if st.button("🚪 ログアウト"):
         logout()
+
+# --- 8. 【新設】チャーター案件画面（管理者・ドライバー両用） ---
+elif st.session_state.page == "charter_page":
+    if st.button("⬅️ メニューに戻る"):
+        st.session_state.page = "menu"
+        st.rerun()
+    
+    st.title("🚚 チャーター案件")
+
+    # 管理者専用：新規登録フォーム
+    if st.session_state.is_admin:
+        with st.expander("➕ 【管理者】新規案件を登録する"):
+            with st.form("charter_form"):
+                c_date = st.date_input("日付")
+                c_time = st.text_input("時間", placeholder="08:00〜17:00")
+                c_loc = st.text_input("集荷地")
+                c_address = st.text_input("住所詳細")
+                c_content = st.text_area("案件内容")
+                c_reward = st.number_input("報酬(税抜)", min_value=0, step=1000)
+                c_items = st.text_input("持ち物", placeholder="台車、ラッシング等")
+                c_note = st.text_area("備考(ドライバー確定後に表示)")
+                if st.form_submit_button("案件を公開する"):
+                    post_data = {
+                        "action": "add_charter", "token": MY_TOKEN,
+                        "date": c_date.strftime('%Y-%m-%d'), "time": c_time,
+                        "location": c_loc, "address": c_address, "content": c_content,
+                        "reward": str(c_reward), "items": c_items, "note": c_note
+                    }
+                    res = session.post(GAS_URL, json=post_data, timeout=30)
+                    if res.json().get("status") == "success":
+                        st.success("案件を登録しました")
+                        st.rerun()
+
+    # 案件一覧の取得
+    try:
+        res = session.get(GAS_URL, params={"action": "get_charter", "token": MY_TOKEN}, timeout=30)
+        charter_list = res.json().get("charter_list", [])
+        
+        if not charter_list:
+            st.info("現在募集中の案件はありません。")
+        else:
+            for item in charter_list:
+                with st.container():
+                    # 状態によってラベルの色を変える
+                    status_label = "🟢 募集中" if item['status'] == "募集中" else f"🔴 決定 ({item['driver1']})"
+                    st.subheader(f"{item['date']} | {item['location']} ({status_label})")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"**時間:** {item['time']}")
+                        st.write(f"**内容:** {item['content']}")
+                    with col2:
+                        st.write(f"**報酬:** {item['reward']}円")
+                        st.write(f"**持物:** {item['items']}")
+
+                    # ドライバー向けの応募処理
+                    if item['status'] == "募集中":
+                        if st.button(f"この案件に応募する", key=f"apply_{item['id']}"):
+                            apply_data = {
+                                "action": "apply_charter", "token": MY_TOKEN,
+                                "charter_id": item['id'], "name": st.session_state.user_name
+                            }
+                            res_app = session.post(GAS_URL, json=apply_data)
+                            if res_app.json().get("status") == "success":
+                                st.success("応募を完了しました！管理者の確認をお待ちください。")
+                            elif res_app.json().get("status") == "already_applied":
+                                st.warning("既に応募済みです。")
+
+                    # 管理者向けのアサイン処理
+                    if st.session_state.is_admin:
+                        with st.expander("🛠 管理用：応募者確認・選定"):
+                            st.write(f"**応募者リスト:** {item['applicants'] if item['applicants'] else 'まだ応募はありません'}")
+                            d1 = st.text_input("メインドライバー", value=item['driver1'], key=f"d1_{item['id']}")
+                            d2 = st.text_input("サブ(任意)", value=item['driver2'], key=f"d2_{item['id']}")
+                            if st.button("ドライバーを確定する", key=f"btn_{item['id']}"):
+                                assign_data = {
+                                    "action": "assign_charter", "token": MY_TOKEN,
+                                    "charter_id": item['id'], "driver1": d1, "driver2": d2
+                                }
+                                session.post(GAS_URL, json=assign_data)
+                                st.success("アサインを完了しました")
+                                st.rerun()
+
+                    # 決定したドライバーにのみ詳細を表示
+                    if item['status'] == "決定" and (st.session_state.user_name in [item['driver1'], item['driver2']] or st.session_state.is_admin):
+                        st.success(f"✅ あなたが担当です。住所：{item['address']}")
+                        st.info(f"**備考:** {item['note']}")
+                    
+                    st.markdown("---")
+    except:
+        st.error("案件の取得に失敗しました。")
 
 # --- 4. ホワイトボード画面 ---
 elif st.session_state.page == "whiteboard":
@@ -170,7 +267,6 @@ elif st.session_state.page == "absent_check":
 
     col1, col2 = st.columns(2)
 
-    # --- ボタン１：出勤未打刻 ---
     with col1:
         if st.button("最新の出勤未打刻者一覧", use_container_width=True, type="primary"):
             with st.spinner("出勤状況を照合中..."):
@@ -189,12 +285,10 @@ elif st.session_state.page == "absent_check":
                 except:
                     st.error("データ取得に失敗しました。")
 
-    # --- ボタン２：退勤未打刻 ---
     with col2:
         if st.button("最新の退勤未打刻者一覧", use_container_width=True):
             with st.spinner("退勤状況を照合中..."):
                 try:
-                    # statusに "not_left" を指定してリクエスト
                     res = session.get(GAS_URL, params={"action": "get_absent", "status": "not_left", "token": MY_TOKEN}, timeout=30)
                     data = res.json()
                     absent_list = data.get("absent_list", [])
@@ -245,27 +339,15 @@ elif st.session_state.page == "attendance":
                 try:
                     res = session.post(GAS_URL, json=post_data, timeout=25)
                     res_data = res.json()
-                    
                     if "error" in res_data:
-                        if res_data.get("error") == "ALREADY_DONE":
-                            st.warning(res_data.get("message"))
-                            return
-                        else:
-                            st.error(f"エラー: {res_data.get('message', '送信失敗')}")
-                            return
-                    
+                        st.error(f"エラー: {res_data.get('message', '送信失敗')}")
+                        return
                     st.success(f"{status}完了！")
                     st.balloons()
                     time.sleep(2)
                     st.rerun()
                 except Exception:
-                    if is_charter:
-                        st.success(f"{status}完了！(反映確認済み)")
-                        st.balloons()
-                        time.sleep(2)
-                        st.rerun()
-                    else:
-                        st.error("通信エラーが発生しました。")
+                    st.error("通信エラーが発生しました。")
 
         with col1:
             if st.button("出勤する", use_container_width=True, type="primary"): 
@@ -275,8 +357,7 @@ elif st.session_state.page == "attendance":
             if is_charter:
                 st.warning("⚠️ 金額入力が必要です")
                 charter_amount = st.number_input("本日の報酬額（税抜）", min_value=0, step=100, value=0)
-                disable_exit = (charter_amount <= 0)
-                if st.button("退勤する", use_container_width=True, disabled=disable_exit):
+                if st.button("退勤する", use_container_width=True, disabled=(charter_amount <= 0)):
                     send_data("退勤", amount=charter_amount)
             else:
                 if st.button("退勤する", use_container_width=True):
@@ -309,27 +390,6 @@ elif st.session_state.page == "reward":
                     my_df["現場"] = my_df["グループ"].apply(lambda x: str(x)[:-1] if x else "チャーター")
                     st.metric(f"{selected_month} の合計報酬", f"{pd.to_numeric(my_df['金額']).sum():,} 円")
                     st.dataframe(my_df[["日時", "現場", "金額"]].assign(日時=my_df["日時_dt"].dt.strftime('%m/%d %H:%M')), use_container_width=True, hide_index=True)
-
-                    st.markdown("---")
-                    st.subheader("📄 請求書情報の申請")
-                    zip_code = st.text_input("郵便番号", placeholder="123-4567")
-                    address = st.text_input("住所", placeholder="石川県金沢市...")
-                    bank_info = st.text_input("振込先口座", placeholder="〇〇銀行 支店 普通 1234567")
-                    
-                    if st.button("請求書データを送信する", use_container_width=True, type="primary"):
-                        if not zip_code or not address or not bank_info:
-                            st.warning("情報を入力してください")
-                        else:
-                            invoice_data = {"action": "create_pdf", "token": MY_TOKEN, "name": st.session_state.user_name, "zip": zip_code, "address": address, "bank": bank_info, "logs": my_df[["日時", "現場", "金額"]].to_dict(orient="records")}
-                            with st.spinner("送信中..."):
-                                try:
-                                    res_upd = session.post(GAS_URL, json=invoice_data, timeout=30)
-                                    if res_upd.json().get("status") == "success":
-                                        st.success("送信が完了しました。")
-                                    else:
-                                        st.error("送信に失敗しました。")
-                                except:
-                                    st.error("通信エラーが発生しました。")
                 else:
                     st.info("データがありません")
         except:
