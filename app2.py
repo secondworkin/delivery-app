@@ -399,7 +399,7 @@ elif st.session_state.page == "attendance":
         
         with col2:
             if is_charter:
-                st.warning("⚠️ 退勤するには金額入力が必要です")
+                st.warning("⚠️ 退勤するには報酬金額の入力してください")
                 charter_amount = st.number_input("本日の報酬額（税抜）", min_value=0, step=100, value=0)
                 disable_exit = (charter_amount <= 0)
                 if st.button("退勤する", use_container_width=True, disabled=disable_exit):
