@@ -227,6 +227,7 @@ elif st.session_state.page == "charter_driver":
                 st.write(f"💰 **報酬**: {task['reward']}円")
                 st.write(f"📍 **住所**: [{task['address']}]({map_url})") # 募集段階でもマップ確認可能
                 st.write(f"📦 **内容**: {task['content']}")
+                st.write(f"🔑 **持ち物**: {task['items']}")
                 
                 applied = st.session_state.user_name in (str(task['applicants']).split(',') if task['applicants'] else [])
                 if applied:
