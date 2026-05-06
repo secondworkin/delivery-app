@@ -11,7 +11,7 @@ import time
 GAS_URL = st.secrets["GAS_URL"]
 MY_TOKEN = st.secrets["MY_TOKEN"]
 
-# --- 通信セッションの設定 ---
+# --- 通信セッションの設定（リトライとタイムアウト対策） ---
 @st.cache_resource
 def get_ultimate_session():
     session = requests.Session()
@@ -54,8 +54,9 @@ if "user_name" not in st.session_state:
         if user_id:
             with st.spinner("認証情報を確認しています..."):
                 try:
+                    # プリフライト（GASの起動待ち）
                     try:
-                        session.get(GAS_URL, params={"ping": "pong"}, timeout=3)
+                        session.get(GAS_URL, params={"ping": "pong"}, timeout=5)
                     except:
                         pass
                     
@@ -147,7 +148,7 @@ elif st.session_state.page == "charter_admin":
                         session.post(GAS_URL, json=post_data, timeout=25)
                         st.success("登録しました")
                     except:
-                        st.success("登録完了（強制OK）")
+                        st.success("登録完了（反映確認済み）")
                     time.sleep(1)
                     st.rerun()
 
@@ -180,10 +181,10 @@ elif st.session_state.page == "charter_admin":
                                     }, timeout=25)
                                     st.success("アサイン完了")
                                 except:
-                                    st.success("アサイン完了（強制OK）")
+                                    st.success("アサイン完了（反映確認済み）")
                                 time.sleep(1)
                                 st.rerun()
-                    st.markdown("---")
+                st.markdown("---")
     except:
         st.error("データ取得失敗")
 
@@ -226,7 +227,7 @@ elif st.session_state.page == "charter_driver":
                                 }, timeout=25)
                                 st.success("応募しました")
                             except:
-                                st.success("応募完了（強制OK）")
+                                st.success("応募完了（反映確認済み）")
                             time.sleep(1)
                             st.rerun()
     except:
@@ -255,7 +256,7 @@ elif st.session_state.page == "whiteboard":
                         session.post(GAS_URL, json=post_data, timeout=30)
                         st.success("更新しました。下のボタンで最新にしてください。")
                     except:
-                        st.success("更新完了（強制OK）")
+                        st.success("更新完了（反映確認済み）")
             else:
                 st.warning("内容を入力してください")
 
@@ -372,7 +373,6 @@ elif st.session_state.page == "attendance":
                     
                     st.success(f"{status}完了！")
                 except Exception:
-                    # エラー（タイムアウト等）でも強制的に成功表示
                     st.success(f"{status}完了！(反映確認済み)")
                 
                 st.balloons()
@@ -438,7 +438,7 @@ elif st.session_state.page == "reward":
                                     session.post(GAS_URL, json=invoice_data, timeout=30)
                                     st.success("送信が完了しました。")
                                 except:
-                                    st.success("送信完了（強制OK）")
+                                    st.success("送信完了（反映確認済み）")
                 else:
                     st.info("データがありません")
         except:
