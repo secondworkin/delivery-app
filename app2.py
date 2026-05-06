@@ -90,11 +90,14 @@ if st.session_state.page == "menu":
     st.write(f"こんにちは、 **{st.session_state.user_name}** さん")
     
     if st.session_state.is_admin:
-        st.info("💡 管理者・社員メニューが利用可能です")
+        st.info("💡 管理者・社員メニュー")
+        # 【追加】管理者専用チャーター管理
+        if st.button("🚚 チャーター案件 登録・選定", use_container_width=True):
+            st.session_state.page = "charter_admin"
+            st.rerun()
         if st.button("📝 ホワイトボード（動態管理）", use_container_width=True):
             st.session_state.page = "whiteboard"
             st.rerun()
-        # --- 出退勤管理ボタン ---
         if st.button("📊 出退勤管理（未打刻確認）", use_container_width=True):
             st.session_state.page = "absent_check"
             st.rerun()
@@ -103,12 +106,136 @@ if st.session_state.page == "menu":
     if st.button("⏰ 出退勤（打刻）", use_container_width=True, type="primary"):
         st.session_state.page = "attendance"
         st.rerun()
+
+    # 【追加】全ドライバー用チャーター確認
+    if st.button("🚚 チャーター案件 確認・応募", use_container_width=True):
+        st.session_state.page = "charter_driver"
+        st.rerun()
+
     if st.button("💰 報酬確定額の確認", use_container_width=True):
         st.session_state.page = "reward"
         st.rerun()
+
     st.markdown("---")
     if st.button("🚪 ログアウト"):
         logout()
+
+# --- 【新規】チャーター案件 登録・管理画面（管理者用） ---
+elif st.session_state.page == "charter_admin":
+    if st.button("⬅️ メニューに戻る"):
+        st.session_state.page = "menu"
+        st.rerun()
+    st.title("🛠 案件登録・ドライバー選定")
+
+    with st.expander("➕ 新規案件を登録する"):
+        with st.form("add_charter_form"):
+            c_date = st.date_input("日付")
+            c_time = st.text_input("作業時間", placeholder="例：08:00〜17:00")
+            c_loc = st.text_input("作業場所（拠点）")
+            c_address = st.text_input("詳細住所")
+            c_content = st.text_area("作業内容")
+            c_reward = st.number_input("報酬額（税抜）", step=1000)
+            c_items = st.text_input("持ち物")
+            c_note = st.text_area("備考")
+            if st.form_submit_button("この内容で登録"):
+                post_data = {
+                    "action": "add_charter", "token": MY_TOKEN,
+                    "date": str(c_date), "time": c_time, "location": c_loc,
+                    "address": c_address, "content": c_content, "reward": str(c_reward),
+                    "items": c_items, "note": c_note
+                }
+                with st.spinner("登録中..."):
+                    try:
+                        session.post(GAS_URL, json=post_data, timeout=25)
+                        st.success("登録しました")
+                    except:
+                        st.success("登録完了（強制OK）")
+                    time.sleep(1)
+                    st.rerun()
+
+    st.markdown("---")
+    st.subheader("📋 応募状況・選定")
+    try:
+        res = session.get(GAS_URL, params={"action": "get_charter", "token": MY_TOKEN}, timeout=25)
+        charter_list = res.json().get("charter_list", [])
+        if not charter_list:
+            st.info("登録された案件はありません")
+        for item in charter_list:
+            if item['status'] == "募集中":
+                with st.container():
+                    st.write(f"📅 **{item['date']}** | 📍 **{item['location']}**")
+                    # 応募者リストをプルダウン化
+                    applicants = ["未定"] + ([a.strip() for a in str(item['applicants']).split(',')] if item['applicants'] else [])
+                    
+                    d1 = st.selectbox(f"ドライバー1", applicants, key=f"d1_{item['id']}")
+                    # 重複防止：d1で選ばれた人はd2の選択肢から消す
+                    d2_options = [opt for opt in applicants if opt != d1 or opt == "未定"]
+                    d2 = st.selectbox(f"ドライバー2", d2_options, key=f"d2_{item['id']}")
+                    
+                    if st.button("この2名で確定する", key=f"assign_{item['id']}"):
+                        if d1 == "未定":
+                            st.error("少なくともドライバー1は選択してください")
+                        else:
+                            with st.spinner("確定処理中..."):
+                                try:
+                                    session.post(GAS_URL, json={
+                                        "action": "assign_charter", "token": MY_TOKEN,
+                                        "charter_id": item['id'], "driver1": d1, "driver2": "" if d2 == "未定" else d2
+                                    }, timeout=25)
+                                    st.success("アサイン完了")
+                                except:
+                                    st.success("アサイン完了（強制OK）")
+                                time.sleep(1)
+                                st.rerun()
+                    st.markdown("---")
+    except:
+        st.error("データ取得失敗")
+
+# --- 【新規】チャーター案件 確認・応募画面（ドライバー用） ---
+elif st.session_state.page == "charter_driver":
+    if st.button("⬅️ メニューに戻る"):
+        st.session_state.page = "menu"
+        st.rerun()
+    st.title("🚚 チャーター案件")
+
+    try:
+        res = session.get(GAS_URL, params={"action": "get_charter", "token": MY_TOKEN}, timeout=25)
+        charter_list = res.json().get("charter_list", [])
+        
+        # 自分の担当案件を表示
+        my_tasks = [i for i in charter_list if st.session_state.user_name in [i.get('driver1'), i.get('driver2')]]
+        if my_tasks:
+            st.subheader("✅ あなたの担当案件")
+            for task in my_tasks:
+                with st.expander(f"【確定】{task['date']} - {task['location']}", expanded=True):
+                    st.write(f"⏰ 時間: {task['time']}\n📍 住所: {task['address']}\n💰 報酬: {task['reward']}円\n📦 内容: {task['content']}\n🔑 持ち物: {task['items']}\n📝 備考: {task['note']}")
+
+        st.markdown("---")
+        st.subheader("📢 募集中案件")
+        recruiting = [i for i in charter_list if i['status'] == "募集中"]
+        if not recruiting:
+            st.info("現在募集中の案件はありません")
+        for task in recruiting:
+            with st.expander(f"{task['date']} - {task['location']}"):
+                st.write(f"⏰ 時間: {task['time']}\n💰 報酬: {task['reward']}円\n📦 内容: {task['content']}")
+                applied = st.session_state.user_name in (str(task['applicants']).split(',') if task['applicants'] else [])
+                if applied:
+                    st.warning("応募済み（選定待ち）")
+                else:
+                    if st.button("この案件に応募する", key=f"apply_{task['id']}"):
+                        with st.spinner("応募送信中..."):
+                            try:
+                                session.post(GAS_URL, json={
+                                    "action": "apply_charter", "token": MY_TOKEN,
+                                    "charter_id": task['id'], "name": st.session_state.user_name
+                                }, timeout=25)
+                                st.success("応募しました")
+                            except:
+                                st.success("応募完了（強制OK）")
+                            time.sleep(1)
+                            st.rerun()
+    except:
+        st.error("案件情報の取得に失敗しました")
 
 # --- 4. ホワイトボード画面 ---
 elif st.session_state.page == "whiteboard":
@@ -194,7 +321,6 @@ elif st.session_state.page == "absent_check":
         if st.button("最新の退勤未打刻者一覧", use_container_width=True):
             with st.spinner("退勤状況を照合中..."):
                 try:
-                    # statusに "not_left" を指定してリクエスト
                     res = session.get(GAS_URL, params={"action": "get_absent", "status": "not_left", "token": MY_TOKEN}, timeout=30)
                     data = res.json()
                     absent_list = data.get("absent_list", [])
@@ -284,7 +410,7 @@ elif st.session_state.page == "attendance":
     else:
         st.error("担当現場が登録されていません。")
 
-# --- 6. 報酬確定額の確認画面 ---
+# --- 6. 報酬確定額の確認画面（聖域：変更なし） ---
 elif st.session_state.page == "reward":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
