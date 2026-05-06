@@ -202,16 +202,32 @@ elif st.session_state.page == "charter_driver":
             st.subheader("✅ あなたの担当案件")
             for task in my_tasks:
                 with st.expander(f"【確定】{task['date']} - {task['location']}", expanded=True):
-                    st.write(f"⏰ 時間: {task['time']}\n📍 住所: {task['address']}\n💰 報酬: {task['reward']}円\n📦 内容: {task['content']}\n🔑 持ち物: {task['items']}\n📝 備考: {task['note']}")
+                    # Googleマップ用リンク生成
+                    map_url = f"https://www.google.com/maps/search/?api=1&query={task['address']}"
+                    
+                    st.write(f"⏰ **時間**: {task['time']}")
+                    st.write(f"📍 **住所**: [{task['address']}]({map_url})") # 住所をタップ可能に
+                    st.write(f"💰 **報酬**: {task['reward']}円")
+                    st.write(f"📦 **内容**: {task['content']}")
+                    st.write(f"🔑 **持ち物**: {task['items']}")
+                    st.write(f"📝 **備考**: {task['note']}")
 
         st.markdown("---")
         st.subheader("📢 募集中案件")
         recruiting = [i for i in charter_list if i['status'] == "募集中"]
         if not recruiting:
             st.info("現在募集中の案件はありません")
+        
         for task in recruiting:
             with st.expander(f"{task['date']} - {task['location']}"):
-                st.write(f"⏰ 時間: {task['time']}\n💰 報酬: {task['reward']}円\n📦 内容: {task['content']}")
+                # 募集中の段階でも住所とマップリンクを表示し、1項目ずつ改行
+                map_url = f"https://www.google.com/maps/search/?api=1&query={task['address']}"
+                
+                st.write(f"⏰ **時間**: {task['time']}")
+                st.write(f"💰 **報酬**: {task['reward']}円")
+                st.write(f"📍 **住所**: [{task['address']}]({map_url})") # 募集段階でもマップ確認可能
+                st.write(f"📦 **内容**: {task['content']}")
+                
                 applied = st.session_state.user_name in (str(task['applicants']).split(',') if task['applicants'] else [])
                 if applied:
                     st.warning("応募済み（選定待ち）")
@@ -226,6 +242,7 @@ elif st.session_state.page == "charter_driver":
                                 st.success("応募しました")
                             except:
                                 st.success("応募完了（反映確認済み）")
+                            # ここにあった st.rerun() はあなたの指示通り完全に削除しました
     except:
         st.error("案件情報の取得に失敗しました")
 
