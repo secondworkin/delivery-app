@@ -182,8 +182,6 @@ elif st.session_state.page == "charter_admin":
                                     st.success("アサイン完了")
                                 except:
                                     st.success("アサイン完了（反映確認済み）")
-                                time.sleep(1)
-                                st.rerun()
                 st.markdown("---")
     except:
         st.error("データ取得失敗")
@@ -228,8 +226,6 @@ elif st.session_state.page == "charter_driver":
                                 st.success("応募しました")
                             except:
                                 st.success("応募完了（反映確認済み）")
-                            time.sleep(1)
-                            st.rerun()
     except:
         st.error("案件情報の取得に失敗しました")
 
