@@ -33,9 +33,19 @@ st.set_page_config(page_title="勤怠管理システム", layout="centered")
 
 hide_style = """
     <style>
+    /* ヘッダー（上）を完全に消す */
+    header {display: none !important;}
+
+    /* フッター（下）を完全に消す */
+    footer {display: none !important;}
+
+    /* 右下の「Deploy」ボタンやステータス（赤い部分など）を強制的に消す */
+    .stAppDeployButton {display: none !important;}
+    div[data-testid="stStatusWidget"] {display: none !important;}
+    
+    /* 余計な余白を詰める */
     #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    .stApp {bottom: 0;}
     </style>
     """
 st.markdown(hide_style, unsafe_allow_html=True)
