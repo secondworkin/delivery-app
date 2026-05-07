@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
 import time
+import base64
 
 # --- 設定 ---
 GAS_URL = st.secrets["GAS_URL"]
@@ -30,6 +31,43 @@ def get_ultimate_session():
 session = get_ultimate_session()
 
 st.set_page_config(page_title="勤怠管理システム", layout="centered")
+import base64
+
+# 画像を読み込んでデータ化
+def get_base64(file):
+    try:
+        with open(file, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except FileNotFoundError:
+        return ""
+
+bin_str = get_base64("bg.png")
+
+# 背景画像とUI調整のCSS
+page_bg_css = f"""
+<style>
+/* 全体の背景設定 */
+[data-testid="stAppViewContainer"] {{
+    background-image: url("data:image/png;base64,{bin_str}");
+    background-size: contain;
+    background-position: top center;
+    background-repeat: no-repeat;
+    background-color: #000000;
+}}
+
+/* 入力バーをロゴの下まで下げる（位置調整） */
+div[data-testid="stVerticalBlock"] > div:has(input[type="text"]) {{
+    padding-top: 35vh !important;
+}}
+
+/* 文字色を白にする */
+section[data-testid="stVerticalBlock"] {{
+    color: white;
+}}
+</style>
+"""
+st.markdown(page_bg_css, unsafe_allow_html=True)
 # --- スマホの専用バッジも消す「完全版」 ---
 hide_style = """
     <style>
