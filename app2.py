@@ -31,6 +31,15 @@ session = get_ultimate_session()
 
 st.set_page_config(page_title="勤怠管理システム", layout="centered")
 
+hide_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+    """
+st.markdown(hide_style, unsafe_allow_html=True)
+
 if "page" not in st.session_state:
     st.session_state.page = "login"
 
