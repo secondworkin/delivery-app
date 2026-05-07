@@ -30,22 +30,22 @@ def get_ultimate_session():
 session = get_ultimate_session()
 
 st.set_page_config(page_title="勤怠管理システム", layout="centered")
-
+# --- スマホの専用バッジも消す「完全版」 ---
 hide_style = """
     <style>
-    /* ヘッダー（上）を完全に消す */
-    header {display: none !important;}
+    /* 基本のヘッダー・フッター・メニューを消す */
+    header, footer, #MainMenu {visibility: hidden; display: none !important;}
 
-    /* フッター（下）を完全に消す */
-    footer {display: none !important;}
-
-    /* 右下の「Deploy」ボタンやステータス（赤い部分など）を強制的に消す */
+    /* スマホ版特有の「Hosted with Streamlit」バッジを強制消去 */
+    .viewerBadge_container__1QSob, .viewerBadge_link__1QSob {display: none !important;}
+    div[class^="viewerBadge"] {display: none !important;}
+    
+    /* 右下のデプロイボタンなどを消去 */
     .stAppDeployButton {display: none !important;}
     div[data-testid="stStatusWidget"] {display: none !important;}
-    
-    /* 余計な余白を詰める */
-    #MainMenu {visibility: hidden;}
-    .stApp {bottom: 0;}
+
+    /* 画面下の余白を極限まで詰める */
+    .stApp {bottom: 0px !important;}
     </style>
     """
 st.markdown(hide_style, unsafe_allow_html=True)
