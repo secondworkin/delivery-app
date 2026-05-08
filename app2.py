@@ -43,27 +43,27 @@ def get_base64(file):
 
 bin_str = get_base64("bg.png")
 
-# 背景画像とUI調整のCSS（背景固定版）
+# 背景画像とUI調整のCSS（スクロール追従版）
 page_bg_css = f"""
 <style>
-/* 全体の背景設定 */
+/* 全体の背景設定：背景自体をスクロールさせる設定 */
 [data-testid="stAppViewContainer"] {{
     background-image: url("data:image/png;base64,{bin_str}");
     background-size: contain;
     background-position: top center;
     background-repeat: no-repeat;
     background-color: #000000;
-    background-attachment: fixed; /* これで背景を固定 */
+    background-attachment: scroll !important; /* スクロールと一緒に上に流れる */
 }}
 
-/* スクロール時に背景が動かないように強制 */
-[data-testid="stMainViewContainer"] {{
-    background-attachment: fixed;
+/* 入力バーやメニューの位置調整 */
+div[data-testid="stVerticalBlock"] > div {{
+    padding-top: 0px;
 }}
 
-/* 入力バーをロゴの下まで下げる（位置調整） */
-div[data-testid="stVerticalBlock"] > div:has(input[type="text"]) {{
-    padding-top: 35vh !important;
+/* ロゴと重ならないように、最初の要素の上に余白を作る */
+.stApp {{
+    padding-top: 35vh; 
 }}
 
 /* 文字色を白にする */
@@ -72,19 +72,7 @@ section[data-testid="stVerticalBlock"] {{
 }}
 </style>
 """
-st.markdown(
-    f"""
-    <style>
-    .stApp {{
-        background-image: url("data:image/png;base64,{base64_string}");
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-attachment: scroll; /* fixedからscrollに変更 */
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown(page_bg_css, unsafe_allow_html=True)
 
 # --- スマホの専用バッジも消す「完全版」 ---
 hide_style = """
