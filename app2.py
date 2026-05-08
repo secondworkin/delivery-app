@@ -97,7 +97,8 @@ if "user_name" not in st.session_state:
     """
     st.markdown(login_bg_css, unsafe_allow_html=True)
     
-    st.markdown('''<p style="color:white; font-size:40px; font-family: Constantia;">login</p>''', unsafe_allow_html=True)    user_id = st.text_input("IDを入力してください", key="login_id")
+    st.markdown('''<p style="color:white; font-size:40px; font-family: Constantia;">login</p>''', unsafe_allow_html=True)
+    user_id = st.text_input("IDを入力してください", key="login_id")
     if st.button("ログイン"):
         if user_id:
             with st.spinner("認証情報を確認しています..."):
