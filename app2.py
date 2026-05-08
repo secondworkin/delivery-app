@@ -105,6 +105,7 @@ if "user_name" not in st.session_state:
 
     if st.button("ログイン"):
         if user_id:
+            st.markdown('<style>div[data-testid="stText"] > p { color: white !important; }</style>', unsafe_allow_html=True)
             with st.spinner("認証情報を確認しています..."):
                 try:
                     # プリフライト（GASの起動待ち）
