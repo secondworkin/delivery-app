@@ -31,7 +31,6 @@ def get_ultimate_session():
 session = get_ultimate_session()
 
 st.set_page_config(page_title="勤怠管理システム", layout="centered")
-import base64
 
 # 画像を読み込んでデータ化
 def get_base64(file):
@@ -44,7 +43,7 @@ def get_base64(file):
 
 bin_str = get_base64("bg.png")
 
-# 背景画像とUI調整のCSS
+# 背景画像とUI調整のCSS（背景固定版）
 page_bg_css = f"""
 <style>
 /* 全体の背景設定 */
@@ -54,6 +53,12 @@ page_bg_css = f"""
     background-position: top center;
     background-repeat: no-repeat;
     background-color: #000000;
+    background-attachment: fixed; /* これで背景を固定 */
+}}
+
+/* スクロール時に背景が動かないように強制 */
+[data-testid="stMainViewContainer"] {{
+    background-attachment: fixed;
 }}
 
 /* 入力バーをロゴの下まで下げる（位置調整） */
@@ -68,6 +73,7 @@ section[data-testid="stVerticalBlock"] {{
 </style>
 """
 st.markdown(page_bg_css, unsafe_allow_html=True)
+
 # --- スマホの専用バッジも消す「完全版」 ---
 hide_style = """
     <style>
