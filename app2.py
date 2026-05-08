@@ -72,7 +72,19 @@ section[data-testid="stVerticalBlock"] {{
 }}
 </style>
 """
-st.markdown(page_bg_css, unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background-image: url("data:image/png;base64,{base64_string}");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: scroll; /* fixedからscrollに変更 */
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # --- スマホの専用バッジも消す「完全版」 ---
 hide_style = """
