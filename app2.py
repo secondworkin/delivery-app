@@ -96,7 +96,8 @@ if "user_name" not in st.session_state:
     </style>
     """
     st.markdown(login_bg_css, unsafe_allow_html=True)
-    
+   
+    st.markdown('<div style="padding-top: 50px;"></div>', unsafe_allow_html=True) 
     st.markdown('''<p style="color:white; font-size:40px; font-family: Constantia;">login</p>''', unsafe_allow_html=True)
     user_id = st.text_input("IDを入力してください", key="login_id")
     if st.button("ログイン"):
