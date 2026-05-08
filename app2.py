@@ -143,7 +143,6 @@ if "user_name" in st.session_state:
         background-color: #000000 !important;
     }
     .stApp { padding-top: 20px !important; } /* 余白を詰めて使いやすくする */
-    h1, h2, h3, p, span, div { color: white !important; }
     </style>
     """
     st.markdown(app_bg_css, unsafe_allow_html=True)
