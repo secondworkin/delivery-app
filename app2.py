@@ -43,37 +43,6 @@ def get_base64(file):
 
 bin_str = get_base64("bg.png")
 
-# 背景画像とUI調整のCSS（スクロール追従版）
-page_bg_css = f"""
-<style>
-/* 全体の背景設定：背景自体をスクロールさせる設定 */
-[data-testid="stAppViewContainer"] {{
-    background-image: url("data:image/png;base64,{bin_str}");
-    background-size: contain;
-    background-position: top center;
-    background-repeat: no-repeat;
-    background-color: #000000;
-    background-attachment: scroll !important; /* スクロールと一緒に上に流れる */
-}}
-
-/* 入力バーやメニューの位置調整 */
-div[data-testid="stVerticalBlock"] > div {{
-    padding-top: 0px;
-}}
-
-/* ロゴと重ならないように、最初の要素の上に余白を作る */
-.stApp {{
-    padding-top: 35vh; 
-}}
-
-/* 文字色を白にする */
-section[data-testid="stVerticalBlock"] {{
-    color: white;
-}}
-</style>
-"""
-st.markdown(page_bg_css, unsafe_allow_html=True)
-
 # --- スマホの専用バッジも消す「完全版」 ---
 hide_style = """
     <style>
@@ -111,6 +80,23 @@ def format_date_jp(x):
 
 # --- 1. ログイン管理 ---
 if "user_name" not in st.session_state:
+    # ログイン画面専用のロゴ入り背景CSS
+    login_bg_css = f"""
+    <style>
+    [data-testid="stAppViewContainer"] {{
+        background-image: url("data:image/png;base64,{bin_str}");
+        background-size: contain;
+        background-position: top center;
+        background-repeat: no-repeat;
+        background-color: #000000;
+        background-attachment: scroll !important;
+    }}
+    .stApp {{ padding-top: 35vh; }} /* ロゴのための余白 */
+    section[data-testid="stVerticalBlock"] {{ color: white; }}
+    </style>
+    """
+    st.markdown(login_bg_css, unsafe_allow_html=True)
+    
     st.title("🔑 ログイン")
     user_id = st.text_input("割り当てられたIDを入力してください", key="login_id")
     if st.button("ログイン"):
@@ -147,6 +133,21 @@ def logout():
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
+
+# ログイン済みの場合に適用される黒背景CSS
+if "user_name" in st.session_state:
+    app_bg_css = """
+    <style>
+    [data-testid="stAppViewContainer"] {
+        background-image: none !important; /* ロゴを消す */
+        background-color: #000000 !important;
+    }
+    .stApp { padding-top: 20px !important; } /* 余白を詰めて使いやすくする */
+    h1, h2, h3, p, span, div { color: white !important; }
+    </style>
+    """
+    st.markdown(app_bg_css, unsafe_allow_html=True)
+
 
 # --- 3. メインメニュー画面 ---
 if st.session_state.page == "menu":
