@@ -43,6 +43,13 @@ def get_base64(file):
 
 bin_str = get_base64("bg.png")
 
+# 日付フォーマット用の関数を追加
+def format_date_jp(date_str):
+    try:
+        return pd.to_datetime(date_str).strftime('%m/%d %H:%M')
+    except:
+        return date_str
+
 hide_style = """
     <style>
     /* ヘッダー・フッター・メニューを完全に隠す */
