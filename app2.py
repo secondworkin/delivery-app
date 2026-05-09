@@ -297,7 +297,7 @@ elif st.session_state.page == "charter_admin":
                     st.rerun()
 
     st.markdown("---")
-    st.subheader("Order Status & Selection")
+    st.markdown('''<p style="color:silver; font-size:24px; font-family: Constantia; font-weight: bold; margin-top: 20px; margin-bottom: 10px;">Order Status & Selection</p>''', unsafe_allow_html=True)
     try:
         res = session.get(GAS_URL, params={"action": "get_charter", "token": MY_TOKEN}, timeout=25)
         charter_list = res.json().get("charter_list", [])
