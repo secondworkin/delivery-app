@@ -43,20 +43,19 @@ def get_base64(file):
 
 bin_str = get_base64("bg.png")
 
-# --- スマホの専用バッジも消す「完全版」 ---
 hide_style = """
     <style>
-    /* 基本のヘッダー・フッター・メニューを消す */
+    /* ヘッダー・フッター・メニューを完全に隠す */
     header, footer, #MainMenu {visibility: hidden; display: none !important;}
 
-    /* スマホ版特有の「Hosted with Streamlit」バッジを強制消去 */
-    .viewerBadge_container__1QSob, .viewerBadge_link__1QSob {display: none !important;}
+    /* 右下の「Hosted with Streamlit」バッジを、名前が変わっても強制消去 */
     div[class^="viewerBadge"] {display: none !important;}
     
-    /* 右下のデプロイボタンなどを消去 */
+    /* 右下のデプロイボタン（王冠）を含むツールバーをまとめて消去 */
+    div[data-testid="stStatusWidget"] {display: none !important;}
     .stAppDeployButton {display: none !important;}
 
-    /* 画面下の余白を極限まで詰める */
+    /* 画面下の余白を詰める */
     .stApp {bottom: 0px !important;}
     </style>
     """
@@ -79,8 +78,8 @@ def format_date_jp(x):
 
 st.markdown("""
     <style>
-    /* スピナー全体の箱を特定し、その中のテキストだけを白くする */
-    div[data-testid="stStatusWidget"] div[role="status"] {
+    /* スピナーの中にある「すべての文字要素」を強制的に白にする */
+    div[data-testid="stStatusWidget"] [role="status"] * {
         color: white !important;
     }
     </style>
