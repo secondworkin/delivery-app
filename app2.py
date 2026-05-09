@@ -104,31 +104,33 @@ st.markdown("""
         color: white !important;
     }
 
-    /* --- 追加：ホワイトボード（表）を白背景にする --- */
+    /* --- 追加：ホワイトボード（表）を白背景・黒文字・黒線にする --- */
 
-    /* 表全体の背景を白、文字を黒にする */
+    /* 表全体の背景を白にする */
     div[data-testid="stTable"], 
     div[data-testid="stDataFrame"],
     div[data-testid="stDataFrame"] div[role="grid"] {
         background-color: white !important;
-        color: #31333F !important;
     }
 
-    /* 表のヘッダー部分を調整 */
+    /* 1. 表の中の文字を「真っ黒」に強制する（シルバー指定を上書き） */
+    div[data-testid="stDataFrame"] td, 
+    div[data-testid="stDataFrame"] th,
+    div[data-testid="stDataFrame"] [data-testid="stMarkdownContainer"] p {
+        color: black !important;
+        -webkit-text-fill-color: black !important; /* スマホ用 */
+        font-weight: bold !important; /* ホワイトボードらしく少し太字に */
+    }
+
+    /* 2. 表の線（枠線）を「真っ黒」にする */
+    div[data-testid="stDataFrame"] td, 
     div[data-testid="stDataFrame"] th {
-        background-color: #f0f2f6 !important; /* 少しグレーがかった白 */
-        color: #31333F !important;
+        border: 1px solid black !important;
     }
 
-    /* 表のセル（中身）の文字色を強制 */
-    div[data-testid="stDataFrame"] td {
-        color: #31333F !important;
-        border: 1px solid #ddd !important; /* 枠線を薄いグレーで見えるようにする */
-    }
-
-    /* セル内のテキストコンテナも黒文字に */
-    div[data-testid="stDataFrame"] div[data-testid="stMarkdownContainer"] p {
-        color: #31333F !important;
+    /* ヘッダーの背景色も少しだけ調整して見やすくする */
+    div[data-testid="stDataFrame"] th {
+        background-color: #e0e0e0 !important;
     }
 
     </style>
