@@ -124,21 +124,21 @@ st.markdown("""
 
 st.markdown("""
     <style>
-    /* 入力項目（text_input, number_input, date_input等）のラベルをシルバーにする */
+    /* 1. 入力項目のラベル（日付、作業時間など）だけをピンポイントでシルバーにする */
     div[data-testid="stWidgetLabel"] p {
         color: silver !important;
         font-size: 16px !important;
         font-weight: bold !important;
     }
 
-    /* 入力欄（ボックス）自体のフォントも調整（必要に応じて） */
-    div[data-testid="stMarkdownContainer"] p {
-        color: silver;
+    /* 2. ボタンの中の文字（stMarkdownContainer）は「濃いグレー」で上書きして守る */
+    div.stButton > button div[data-testid="stMarkdownContainer"] p {
+        color: #31333F !important;
     }
     
-    /* プレースホルダー（「例：08:00〜17:00」などの薄い文字）の色調整 */
+    /* 3. プレースホルダーの色調整 */
     input::placeholder, textarea::placeholder {
-        color: #888 !important; /* 少し明るめのグレーにして見やすく */
+        color: #888 !important;
     }
     </style>
     """, unsafe_allow_html=True)
