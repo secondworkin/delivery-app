@@ -112,19 +112,14 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
-
 st.markdown("""
     <style>
-    /* st.subheader の文字色をシルバーに変更 */
-    div[data-testid="stSubheader"] h3 {
+    /* st.subheader の中の文字を強制的にシルバーにする */
+    /* ボタン用の『濃いグレー』設定よりも、こちらを優先させます */
+    div[data-testid="stSubheader"] div[data-testid="stMarkdownContainer"] p {
         color: silver !important;
-        font-family: 'Constantia', serif; /* タイトルと合わせる場合 */
+        font-family: 'Constantia', serif !important;
         font-weight: bold !important;
-    }
-    
-    /* 下にある「登録された案件はありません」などの案内も白く見やすくする */
-    div[data-testid="stNotification"] p {
-        color: white !important;
     }
     </style>
     """, unsafe_allow_html=True)
