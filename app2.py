@@ -73,67 +73,45 @@ st.markdown("""
         font-weight: bold !important;
     }
 
-    /* 3. 案件登録画面などの中身の文字をシルバーにする */
-    /* ※ここが表の中にまで影響しないよう、後続の命令で上書きします */
+    /* 3. 全体の文字（pタグ）はシルバーを維持（黒背景の場所で消えないように） */
     div[data-testid="stMarkdownContainer"] p {
         color: silver;
     }
 
-    /* 4. ボタンの中の文字を濃いグレーで救出 */
+    /* 4. ホワイトボード（表）の中だけをピンポイントで「背景白・文字黒・線黒」にする */
+    /* stDataFrameという箱の中にあるもの全てを対象にします */
+    div[data-testid="stDataFrame"] {
+        background-color: white !important;
+    }
+    
+    /* 表の中の文字を真っ黒に上書き */
+    div[data-testid="stDataFrame"] p, 
+    div[data-testid="stDataFrame"] span, 
+    div[data-testid="stDataFrame"] div {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
+
+    /* 表の枠線を真っ黒にする */
+    div[data-testid="stDataFrame"] [role="gridcell"], 
+    div[data-testid="stDataFrame"] [role="columnheader"] {
+        border: 1px solid #000000 !important;
+    }
+
+    /* 5. ボタンの中の文字（濃いグレー） */
     div.stButton > button div[data-testid="stMarkdownContainer"] p {
         color: #31333F !important;
     }
 
-    /* 5. 白いボタンの背景と挙動を固定 */
+    /* 6. 白いボタンの背景を固定 */
     div.stButton > button:not([kind="primary"]) {
         background-color: white !important;
-    }
-    div.stButton > button:not([kind="primary"]):hover, 
-    div.stButton > button:not([kind="primary"]):active {
-        background-color: white !important;
-        border-color: silver !important;
-    }
-
-    /* 6. プレースホルダー（入力例） */
-    input::placeholder, textarea::placeholder {
-        color: #888 !important;
     }
 
     /* 7. アコーディオンのタイトル */
     .stExpander summary p {
         color: white !important;
     }
-
-    /* --- 修正：ホワイトボード（表）を「完全な黒」で上書きする --- */
-
-    /* 表全体の背景を白にする */
-    div[data-testid="stTable"], 
-    div[data-testid="stDataFrame"],
-    div[data-testid="stDataFrame"] div[role="grid"] {
-        background-color: white !important;
-    }
-
-    /* 表の中のあらゆる要素（文字、スパン、段落）を真っ黒に固定 */
-    div[data-testid="stDataFrame"] div[role="grid"] *,
-    div[data-testid="stDataFrame"] td, 
-    div[data-testid="stDataFrame"] th,
-    div[data-testid="stDataFrame"] [data-testid="stMarkdownContainer"] p {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        font-weight: bold !important;
-    }
-
-    /* 表の線（枠線）を真っ黒にする */
-    div[data-testid="stDataFrame"] td, 
-    div[data-testid="stDataFrame"] th {
-        border: 1px solid #000000 !important;
-    }
-
-    /* ヘッダーの背景色（少しグレー） */
-    div[data-testid="stDataFrame"] th {
-        background-color: #e0e0e0 !important;
-    }
-
     </style>
     """, unsafe_allow_html=True)
 # --- 1. ログイン管理 ---
