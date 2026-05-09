@@ -66,79 +66,43 @@ if "page" not in st.session_state:
 
 st.markdown("""
     <style>
-    /* スピナーの中にある「すべての文字要素」を強制的に白にする */
-    div[data-testid="stStatusWidget"] [role="status"] * {
+    /* 1. スピナー（読込中）の文字を白にする */
+    div[data-testid="stStatusWidget"] div[role="status"] p {
         color: white !important;
     }
-    </style>
-    """, unsafe_allow_html=True)
 
-st.markdown("""
-    <style>
-    /* 全ての白いボタン（標準ボタン）の文字色を適切な濃さに固定 */
-    div.stButton > button:not([kind="primary"]) {
-        color: #31333F !important; /* Streamlit標準の読みやすい濃いグレー */
-        background-color: white !important;
-    }
-
-    /* タップした時も文字色と背景を維持する */
-    div.stButton > button:not([kind="primary"]):hover, 
-    div.stButton > button:not([kind="primary"]):active, 
-    div.stButton > button:not([kind="primary"]):focus {
-        color: #31333F !important;
-        background-color: white !important;
-        border-color: silver !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-st.markdown("""
-    <style>
-    /* アコーディオン全体の外枠と背景のデザイン */
-    .stExpander {
-        background-color: #262626 !important; /* Admin Menuと同じ濃いグレー */
-        border: 1px solid #444 !important;    /* わずかな境界線 */
-        border-radius: 5px !important;
-        margin-bottom: 10px !important;
-    }
-
-    /* 「新規案件を登録する」の文字色を白くして、フォントを調整 */
-    .stExpander summary p {
-        color: white !important;
-        font-size: 18px !important;
-        font-weight: bold !important;
-    }
-
-    /* 矢印アイコンをシルバーにして目立たせる */
-    .stExpander svg {
-        fill: silver !important;
-        transform: scale(1.2); /* 少し大きくして押しやすく */
-    }
-
-    /* マウスや指が触れた時に少し明るくする（操作感の向上） */
-    .stExpander:hover {
-        border-color: silver !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-st.markdown("""
-    <style>
-    /* 1. 入力項目のラベル（日付、作業時間など）だけをピンポイントでシルバーにする */
+    /* 2. 入力項目のラベル（日付、場所など）をシルバーにする */
     div[data-testid="stWidgetLabel"] p {
         color: silver !important;
         font-size: 16px !important;
         font-weight: bold !important;
     }
 
-    /* 2. ボタンの中の文字（stMarkdownContainer）は「濃いグレー」で上書きして守る */
+    /* 3. ボタンの中の文字だけを「濃いグレー」で固定する */
+    /* これにより、他の場所のシルバー設定に引きずられません */
     div.stButton > button div[data-testid="stMarkdownContainer"] p {
         color: #31333F !important;
     }
-    
-    /* 3. プレースホルダーの色調整 */
+
+    /* 4. 白いボタン（標準ボタン）の挙動を固定 */
+    div.stButton > button:not([kind="primary"]) {
+        background-color: white !important;
+    }
+    div.stButton > button:not([kind="primary"]):hover, 
+    div.stButton > button:not([kind="primary"]):active, 
+    div.stButton > button:not([kind="primary"]):focus {
+        background-color: white !important;
+        border-color: silver !important;
+    }
+
+    /* 5. プレースホルダー（入力例）の色調整 */
     input::placeholder, textarea::placeholder {
         color: #888 !important;
+    }
+
+    /* 6. その他、アコーディオン等の文字色（必要な場合のみ） */
+    .stExpander summary p {
+        color: white !important;
     }
     </style>
     """, unsafe_allow_html=True)
