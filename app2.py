@@ -67,7 +67,8 @@ if "page" not in st.session_state:
 st.markdown("""
     <style>
     /* 1. スピナー（読込中）の文字を白にする */
-    div[data-testid="stStatusWidget"] div[role="status"] p {
+    div[data-testid="stStatusWidget"] div[role="status"] p,
+    div[data-testid="stStatusWidget"] div[role="status"] {
         color: white !important;
     }
 
@@ -78,29 +79,34 @@ st.markdown("""
         font-weight: bold !important;
     }
 
-    /* 3. ボタンの中の文字だけを「濃いグレー」で固定する */
-    /* これにより、他の場所のシルバー設定に引きずられません */
+    /* 3. 案件登録画面の「中身の文字（pタグ）」をシルバーにする */
+    /* これが案件登録画面を救う命令ですが、同時にボタンの文字も変えてしまいます */
+    div[data-testid="stMarkdownContainer"] p {
+        color: silver;
+    }
+
+    /* 4. 【最優先：鉄の掟】ボタンの中の文字だけは「濃いグレー」で上書きし直す */
+    /* この指定を「3番」より後に書くことで、ボタンの文字だけを救出します */
     div.stButton > button div[data-testid="stMarkdownContainer"] p {
         color: #31333F !important;
     }
 
-    /* 4. 白いボタン（標準ボタン）の挙動を固定 */
+    /* 5. 白いボタンの背景と挙動を固定 */
     div.stButton > button:not([kind="primary"]) {
         background-color: white !important;
     }
     div.stButton > button:not([kind="primary"]):hover, 
-    div.stButton > button:not([kind="primary"]):active, 
-    div.stButton > button:not([kind="primary"]):focus {
+    div.stButton > button:not([kind="primary"]):active {
         background-color: white !important;
         border-color: silver !important;
     }
 
-    /* 5. プレースホルダー（入力例）の色調整 */
+    /* 6. プレースホルダー（入力例） */
     input::placeholder, textarea::placeholder {
         color: #888 !important;
     }
 
-    /* 6. その他、アコーディオン等の文字色（必要な場合のみ） */
+    /* 7. アコーディオン */
     .stExpander summary p {
         color: white !important;
     }
