@@ -104,32 +104,31 @@ st.markdown("""
         color: white !important;
     }
 
-    /* --- 今回の訂正：入力バーによる占拠を防ぐ構造ガード --- */
+    /* --- 追加：ホワイトボード（表）を白背景にする --- */
 
-    /* プルダウン全体（Expander）の設定 */
-    .stExpander {
-        background-color: #262626 !important;
-        border: 1px solid #444 !important; /* 境界線を明確にして押しつぶしを視覚的に防ぐ */
-    }
-
-    /* プルダウンの中身（詳細部分）の余白と背景を固定 */
-    div[data-testid="stExpanderDetails"] {
-        background-color: #262626 !important;
-        padding: 15px !important; /* ラベルと入力欄の間に強制的に隙間を作る */
-    }
-
-    /* 入力バー（白い部分）が外枠まで広がって押しつぶさないように、
-       サイズと位置を「親要素の内側」に厳格に閉じ込める */
-    div[data-testid="stExpanderDetails"] input, 
-    div[data-testid="stExpanderDetails"] textarea {
+    /* 表全体の背景を白、文字を黒にする */
+    div[data-testid="stTable"], 
+    div[data-testid="stDataFrame"],
+    div[data-testid="stDataFrame"] div[role="grid"] {
         background-color: white !important;
         color: #31333F !important;
-        /* 入力バーが親要素（グレーの背景）を覆い隠さないよう、マージンで制御 */
-        margin-top: 5px !important;
-        margin-bottom: 5px !important;
-        width: 100% !important;
-        /* スマホのフォーカス時に外枠を塗りつぶす挙動を抑制 */
-        box-shadow: none !important;
+    }
+
+    /* 表のヘッダー部分を調整 */
+    div[data-testid="stDataFrame"] th {
+        background-color: #f0f2f6 !important; /* 少しグレーがかった白 */
+        color: #31333F !important;
+    }
+
+    /* 表のセル（中身）の文字色を強制 */
+    div[data-testid="stDataFrame"] td {
+        color: #31333F !important;
+        border: 1px solid #ddd !important; /* 枠線を薄いグレーで見えるようにする */
+    }
+
+    /* セル内のテキストコンテナも黒文字に */
+    div[data-testid="stDataFrame"] div[data-testid="stMarkdownContainer"] p {
+        color: #31333F !important;
     }
 
     </style>
