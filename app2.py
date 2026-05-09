@@ -92,6 +92,13 @@ st.markdown("""
     .stExpander summary p {
         color: white !important;
     }
+
+    /* テーブル全体の枠線と、セルごとの区切り線を白くする */
+    div[data-testid="stTable"] table, 
+    div[data-testid="stTable"] th, 
+    div[data-testid="stTable"] td {
+        border: 1px solid white !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
