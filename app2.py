@@ -66,8 +66,7 @@ if "page" not in st.session_state:
 
 st.markdown("""
     <style>
-
-    /* 2. 入力項目のラベルをシルバーにする */
+    /* 2. 入力項目のラベル（日付、場所など）をシルバーにする */
     div[data-testid="stWidgetLabel"] p {
         color: silver !important;
         font-size: 16px !important;
@@ -75,6 +74,7 @@ st.markdown("""
     }
 
     /* 3. 案件登録画面などの中身の文字をシルバーにする */
+    /* ※ここが表の中にまで影響しないよう、後続の命令で上書きします */
     div[data-testid="stMarkdownContainer"] p {
         color: silver;
     }
@@ -104,7 +104,7 @@ st.markdown("""
         color: white !important;
     }
 
-    /* --- 追加：ホワイトボード（表）を白背景・黒文字・黒線にする --- */
+    /* --- 修正：ホワイトボード（表）を「完全な黒」で上書きする --- */
 
     /* 表全体の背景を白にする */
     div[data-testid="stTable"], 
@@ -113,41 +113,29 @@ st.markdown("""
         background-color: white !important;
     }
 
-    /* 1. 表の中の文字を「真っ黒」に強制する（シルバー指定を上書き） */
+    /* 表の中のあらゆる要素（文字、スパン、段落）を真っ黒に固定 */
+    div[data-testid="stDataFrame"] div[role="grid"] *,
     div[data-testid="stDataFrame"] td, 
     div[data-testid="stDataFrame"] th,
     div[data-testid="stDataFrame"] [data-testid="stMarkdownContainer"] p {
-        color: black !important;
-        -webkit-text-fill-color: black !important; /* スマホ用 */
-        font-weight: bold !important; /* ホワイトボードらしく少し太字に */
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        font-weight: bold !important;
     }
 
-    /* 2. 表の線（枠線）を「真っ黒」にする */
+    /* 表の線（枠線）を真っ黒にする */
     div[data-testid="stDataFrame"] td, 
     div[data-testid="stDataFrame"] th {
-        border: 1px solid black !important;
+        border: 1px solid #000000 !important;
     }
 
-    /* ヘッダーの背景色も少しだけ調整して見やすくする */
+    /* ヘッダーの背景色（少しグレー） */
     div[data-testid="stDataFrame"] th {
         background-color: #e0e0e0 !important;
     }
 
     </style>
     """, unsafe_allow_html=True)
-
-# --- 共通関数：日本時間への整形 ---
-def format_date_jp(x):
-    try:
-        if not x or x == "": return ""
-        dt = pd.to_datetime(x)
-        if dt.tzinfo is None or "Z" in str(x):
-             if dt.hour < 9:
-                 dt = dt + timedelta(hours=9)
-        return dt.strftime('%m/%d %H:%M')
-    except:
-        return x
-
 # --- 1. ログイン管理 ---
 if "user_name" not in st.session_state:
     # ログイン画面専用のロゴ入り背景CSS
