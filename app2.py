@@ -55,7 +55,6 @@ hide_style = """
     
     /* 右下のデプロイボタンなどを消去 */
     .stAppDeployButton {display: none !important;}
-    div[data-testid="stStatusWidget"] {display: none !important;}
 
     /* 画面下の余白を極限まで詰める */
     .stApp {bottom: 0px !important;}
