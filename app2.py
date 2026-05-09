@@ -66,27 +66,20 @@ if "page" not in st.session_state:
 
 st.markdown("""
     <style>
-    /* 1. スピナー（読込中）の文字を白にする */
-    div[data-testid="stStatusWidget"] div[role="status"] p,
-    div[data-testid="stStatusWidget"] div[role="status"] {
-        color: white !important;
-    }
 
-    /* 2. 入力項目のラベル（日付、場所など）をシルバーにする */
+    /* 2. 入力項目のラベルをシルバーにする */
     div[data-testid="stWidgetLabel"] p {
         color: silver !important;
         font-size: 16px !important;
         font-weight: bold !important;
     }
 
-    /* 3. 案件登録画面の「中身の文字（pタグ）」をシルバーにする */
-    /* これが案件登録画面を救う命令ですが、同時にボタンの文字も変えてしまいます */
+    /* 3. 案件登録画面などの中身の文字をシルバーにする */
     div[data-testid="stMarkdownContainer"] p {
         color: silver;
     }
 
-    /* 4. 【最優先：鉄の掟】ボタンの中の文字だけは「濃いグレー」で上書きし直す */
-    /* この指定を「3番」より後に書くことで、ボタンの文字だけを救出します */
+    /* 4. ボタンの中の文字を濃いグレーで救出 */
     div.stButton > button div[data-testid="stMarkdownContainer"] p {
         color: #31333F !important;
     }
@@ -106,21 +99,39 @@ st.markdown("""
         color: #888 !important;
     }
 
-    /* 7. アコーディオン */
+    /* 7. アコーディオンのタイトル */
     .stExpander summary p {
         color: white !important;
     }
-    </style>
-    """, unsafe_allow_html=True)
-st.markdown("""
-    <style>
-    /* st.subheader の中の文字を強制的にシルバーにする */
-    /* ボタン用の『濃いグレー』設定よりも、こちらを優先させます */
-    div[data-testid="stSubheader"] div[data-testid="stMarkdownContainer"] p {
-        color: silver !important;
-        font-family: 'Constantia', serif !important;
-        font-weight: bold !important;
+
+    /* --- 今回の訂正：入力バーによる占拠を防ぐ構造ガード --- */
+
+    /* プルダウン全体（Expander）の設定 */
+    .stExpander {
+        background-color: #262626 !important;
+        border: 1px solid #444 !important; /* 境界線を明確にして押しつぶしを視覚的に防ぐ */
     }
+
+    /* プルダウンの中身（詳細部分）の余白と背景を固定 */
+    div[data-testid="stExpanderDetails"] {
+        background-color: #262626 !important;
+        padding: 15px !important; /* ラベルと入力欄の間に強制的に隙間を作る */
+    }
+
+    /* 入力バー（白い部分）が外枠まで広がって押しつぶさないように、
+       サイズと位置を「親要素の内側」に厳格に閉じ込める */
+    div[data-testid="stExpanderDetails"] input, 
+    div[data-testid="stExpanderDetails"] textarea {
+        background-color: white !important;
+        color: #31333F !important;
+        /* 入力バーが親要素（グレーの背景）を覆い隠さないよう、マージンで制御 */
+        margin-top: 5px !important;
+        margin-bottom: 5px !important;
+        width: 100% !important;
+        /* スマホのフォーカス時に外枠を塗りつぶす挙動を抑制 */
+        box-shadow: none !important;
+    }
+
     </style>
     """, unsafe_allow_html=True)
 
