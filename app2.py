@@ -68,7 +68,7 @@ st.markdown("""
 
     /* 3. 全体の文字（pタグ）をシルバーにする */
     div[data-testid="stMarkdownContainer"] p {
-        color: black;
+        color: white;
     }
 
     /* 5. ボタンの中の文字（濃いグレー） */
