@@ -230,7 +230,7 @@ elif st.session_state.page == "charter_admin":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
         st.rerun()
-    st.title("🛠 案件登録・ドライバー選定")
+    st.markdown('''<p style="color:silver; font-size:32px; font-family: Constantia; font-weight: bold;">Order Entry</p>''', unsafe_allow_html=True)
 
     with st.expander("➕ 新規案件を登録する"):
         with st.form("add_charter_form"):
