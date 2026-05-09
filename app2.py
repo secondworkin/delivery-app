@@ -161,7 +161,7 @@ if "user_name" in st.session_state:
 
 # --- 3. メインメニュー画面 ---
 if st.session_state.page == "menu":
-    st.title("📱 メインメニュー")
+    st.markdown('''<p style="color:silver; font-size:40px; font-family: Constantia;">main menu</p>''', unsafe_allow_html=True)
     st.write(f"こんにちは、 **{st.session_state.user_name}** さん")
     
     if st.session_state.is_admin:
