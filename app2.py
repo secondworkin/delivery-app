@@ -397,7 +397,7 @@ elif st.session_state.page == "whiteboard":
         st.session_state.page = "menu"
         st.rerun()
     
-    st.title("📝 ホワイトボード")
+    st.markdown('''<p style="color:silver; font-size:40px; font-family: Constantia; font-weight: bold; margin-top: 20px; margin-bottom: 10px;">Whiteboard</p>''', unsafe_allow_html=True)
     
     with st.expander("自分の動きを更新する", expanded=True):
         new_content = st.text_input("現在の業務内容を入力", placeholder="例：〇〇で営業 16時帰社予定")
