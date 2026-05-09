@@ -66,6 +66,16 @@ if "page" not in st.session_state:
 
 st.markdown("""
     <style>
+    /* スピナーの中にある「すべての文字要素」を強制的に白にする */
+    div[data-testid="stStatusWidget"] [role="status"] * {
+        color: white !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+st.markdown("""
+    <style>
     /* 白いボタン（標準ボタン）がタップで黒くなるのを防ぐ */
     div.stButton > button:not([kind="primary"]):hover, 
     div.stButton > button:not([kind="primary"]):active, 
@@ -107,6 +117,27 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+st.markdown("""
+    <style>
+    /* 入力項目（text_input, number_input, date_input等）のラベルをシルバーにする */
+    div[data-testid="stWidgetLabel"] p {
+        color: silver !important;
+        font-size: 16px !important;
+        font-weight: bold !important;
+    }
+
+    /* 入力欄（ボックス）自体のフォントも調整（必要に応じて） */
+    div[data-testid="stMarkdownContainer"] p {
+        color: silver;
+    }
+    
+    /* プレースホルダー（「例：08:00〜17:00」などの薄い文字）の色調整 */
+    input::placeholder, textarea::placeholder {
+        color: #888 !important; /* 少し明るめのグレーにして見やすく */
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- 共通関数：日本時間への整形 ---
 def format_date_jp(x):
     try:
@@ -118,15 +149,6 @@ def format_date_jp(x):
         return dt.strftime('%m/%d %H:%M')
     except:
         return x
-
-st.markdown("""
-    <style>
-    /* スピナーの中にある「すべての文字要素」を強制的に白にする */
-    div[data-testid="stStatusWidget"] [role="status"] * {
-        color: white !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
 
 # --- 1. ログイン管理 ---
 if "user_name" not in st.session_state:
