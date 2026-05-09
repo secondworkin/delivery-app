@@ -73,15 +73,20 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-
 st.markdown("""
     <style>
-    /* 白いボタン（標準ボタン）がタップで黒くなるのを防ぐ */
+    /* 全ての白いボタン（標準ボタン）の文字色を適切な濃さに固定 */
+    div.stButton > button:not([kind="primary"]) {
+        color: #31333F !important; /* Streamlit標準の読みやすい濃いグレー */
+        background-color: white !important;
+    }
+
+    /* タップした時も文字色と背景を維持する */
     div.stButton > button:not([kind="primary"]):hover, 
     div.stButton > button:not([kind="primary"]):active, 
     div.stButton > button:not([kind="primary"]):focus {
+        color: #31333F !important;
         background-color: white !important;
-        color: black !important;
         border-color: silver !important;
     }
     </style>
