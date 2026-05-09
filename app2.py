@@ -77,6 +77,36 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+st.markdown("""
+    <style>
+    /* アコーディオン全体の外枠と背景のデザイン */
+    .stExpander {
+        background-color: #262626 !important; /* Admin Menuと同じ濃いグレー */
+        border: 1px solid #444 !important;    /* わずかな境界線 */
+        border-radius: 5px !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* 「新規案件を登録する」の文字色を白くして、フォントを調整 */
+    .stExpander summary p {
+        color: white !important;
+        font-size: 18px !important;
+        font-weight: bold !important;
+    }
+
+    /* 矢印アイコンをシルバーにして目立たせる */
+    .stExpander svg {
+        fill: silver !important;
+        transform: scale(1.2); /* 少し大きくして押しやすく */
+    }
+
+    /* マウスや指が触れた時に少し明るくする（操作感の向上） */
+    .stExpander:hover {
+        border-color: silver !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- 共通関数：日本時間への整形 ---
 def format_date_jp(x):
     try:
