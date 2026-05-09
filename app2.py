@@ -64,6 +64,19 @@ st.markdown(hide_style, unsafe_allow_html=True)
 if "page" not in st.session_state:
     st.session_state.page = "login"
 
+st.markdown("""
+    <style>
+    /* 白いボタン（標準ボタン）がタップで黒くなるのを防ぐ */
+    div.stButton > button:not([kind="primary"]):hover, 
+    div.stButton > button:not([kind="primary"]):active, 
+    div.stButton > button:not([kind="primary"]):focus {
+        background-color: white !important;
+        color: black !important;
+        border-color: silver !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- 共通関数：日本時間への整形 ---
 def format_date_jp(x):
     try:
