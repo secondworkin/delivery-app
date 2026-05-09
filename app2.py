@@ -165,14 +165,31 @@ if st.session_state.page == "menu":
     st.markdown(f'''<p style="color:white; font-size:18px; font-family: sans-serif;">User : <span style="color:white; font-weight:bold;">{st.session_state.user_name}</span></p>''', unsafe_allow_html=True)
     
     if st.session_state.is_admin:
-        st.info("💡 管理者・社員メニュー")
-        if st.button("🚚 チャーター案件 登録・選定", use_container_width=True):
+        st.markdown(f'''
+    <div style="
+        background-color: #262626; 
+        border-left: 5px solid silver; 
+        padding: 10px 15px; 
+        margin: 10px 0px;
+        border-radius: 5px;
+    ">
+        <p style="
+            color: silver; 
+            font-size: 16px; 
+            margin: 0; 
+            font-weight: bold;
+        ">
+            💡 管理者・社員メニュー
+        </p>
+    </div>
+''', unsafe_allow_html=True)
+        if st.button("チャーター案件 登録・選定", use_container_width=True):
             st.session_state.page = "charter_admin"
             st.rerun()
-        if st.button("📝 ホワイトボード（動態管理）", use_container_width=True):
+        if st.button("ホワイトボード（動態管理）", use_container_width=True):
             st.session_state.page = "whiteboard"
             st.rerun()
-        if st.button("📊 出退勤管理（未打刻確認）", use_container_width=True):
+        if st.button("出退勤管理（未打刻確認）", use_container_width=True):
             st.session_state.page = "absent_check"
             st.rerun()
 
