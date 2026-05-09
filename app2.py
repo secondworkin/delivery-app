@@ -48,13 +48,6 @@ hide_style = """
     /* ヘッダー・フッター・メニューを完全に隠す */
     header, footer, #MainMenu {visibility: hidden; display: none !important;}
 
-    /* 右下の「Hosted with Streamlit」バッジを、名前が変わっても強制消去 */
-    div[class^="viewerBadge"] {display: none !important;}
-    
-    /* 右下のデプロイボタン（王冠）を含むツールバーをまとめて消去 */
-    div[data-testid="stStatusWidget"] {display: none !important;}
-    .stAppDeployButton {display: none !important;}
-
     /* 画面下の余白を詰める */
     .stApp {bottom: 0px !important;}
     </style>
@@ -75,17 +68,7 @@ st.markdown("""
 
     /* 3. 全体の文字（pタグ）をシルバーにする */
     div[data-testid="stMarkdownContainer"] p {
-        color: silver;
-    }
-
-    /* 4. ホワイトボード（表）の中の文字と線を白っぽく固定する */
-    /* 背景色(background-color)の指定を消したので、読み込みエラーは起きません */
-    div[data-testid="stDataFrame"] [role="gridcell"], 
-    div[data-testid="stDataFrame"] [role="columnheader"],
-    div[data-testid="stDataFrame"] [data-testid="stMarkdownContainer"] p {
-        color: silver !important;
-        -webkit-text-fill-color: silver !important;
-        border-color: #444 !important; /* 枠線を暗めのグレーにして見やすくする */
+        color: black;
     }
 
     /* 5. ボタンの中の文字（濃いグレー） */
