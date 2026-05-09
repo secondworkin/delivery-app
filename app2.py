@@ -73,29 +73,19 @@ st.markdown("""
         font-weight: bold !important;
     }
 
-    /* 3. 全体の文字（pタグ）はシルバーを維持（黒背景の場所で消えないように） */
+    /* 3. 全体の文字（pタグ）をシルバーにする */
     div[data-testid="stMarkdownContainer"] p {
         color: silver;
     }
 
-    /* 4. ホワイトボード（表）の中だけをピンポイントで「背景白・文字黒・線黒」にする */
-    /* stDataFrameという箱の中にあるもの全てを対象にします */
-    div[data-testid="stDataFrame"] {
-        background-color: white !important;
-    }
-    
-    /* 表の中の文字を真っ黒に上書き */
-    div[data-testid="stDataFrame"] p, 
-    div[data-testid="stDataFrame"] span, 
-    div[data-testid="stDataFrame"] div {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-    }
-
-    /* 表の枠線を真っ黒にする */
+    /* 4. ホワイトボード（表）の中の文字と線を白っぽく固定する */
+    /* 背景色(background-color)の指定を消したので、読み込みエラーは起きません */
     div[data-testid="stDataFrame"] [role="gridcell"], 
-    div[data-testid="stDataFrame"] [role="columnheader"] {
-        border: 1px solid #000000 !important;
+    div[data-testid="stDataFrame"] [role="columnheader"],
+    div[data-testid="stDataFrame"] [data-testid="stMarkdownContainer"] p {
+        color: silver !important;
+        -webkit-text-fill-color: silver !important;
+        border-color: #444 !important; /* 枠線を暗めのグレーにして見やすくする */
     }
 
     /* 5. ボタンの中の文字（濃いグレー） */
@@ -114,6 +104,7 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
+
 # --- 1. ログイン管理 ---
 if "user_name" not in st.session_state:
     # ログイン画面専用のロゴ入り背景CSS
