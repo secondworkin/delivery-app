@@ -78,6 +78,15 @@ def format_date_jp(x):
     except:
         return x
 
+st.markdown("""
+    <style>
+    /* スピナー全体の箱を特定し、その中のテキストだけを白くする */
+    div[data-testid="stStatusWidget"] div[role="status"] {
+        color: white !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- 1. ログイン管理 ---
 if "user_name" not in st.session_state:
     # ログイン画面専用のロゴ入り背景CSS
@@ -105,7 +114,6 @@ if "user_name" not in st.session_state:
 
     if st.button("ログイン"):
         if user_id:
-            st.markdown('<style>div[data-testid="stStatusWidget"] div { color: white !important; }</style>', unsafe_allow_html=True)
             with st.spinner("認証情報を確認しています..."):
                 try:
                     # プリフライト（GASの起動待ち）
