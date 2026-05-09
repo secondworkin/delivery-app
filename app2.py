@@ -113,6 +113,22 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+st.markdown("""
+    <style>
+    /* st.subheader の文字色をシルバーに変更 */
+    div[data-testid="stSubheader"] h3 {
+        color: silver !important;
+        font-family: 'Constantia', serif; /* タイトルと合わせる場合 */
+        font-weight: bold !important;
+    }
+    
+    /* 下にある「登録された案件はありません」などの案内も白く見やすくする */
+    div[data-testid="stNotification"] p {
+        color: white !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- 共通関数：日本時間への整形 ---
 def format_date_jp(x):
     try:
@@ -286,7 +302,7 @@ elif st.session_state.page == "charter_admin":
                     st.rerun()
 
     st.markdown("---")
-    st.subheader("📋 応募状況・選定")
+    st.subheader("Order Status & Selection")
     try:
         res = session.get(GAS_URL, params={"action": "get_charter", "token": MY_TOKEN}, timeout=25)
         charter_list = res.json().get("charter_list", [])
