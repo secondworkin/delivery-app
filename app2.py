@@ -8,29 +8,44 @@ from requests.adapters import HTTPAdapter
 import time
 import base64
 
-import streamlit as st
-import base64
+# --- 1. まず関数を定義する（これを使わないと画像が読み込めないため） ---
+def get_base64(file):
+    try:
+        with open(file, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except FileNotFoundError:
+        return ""
 
-# アイコン用の画像ファイルをBase64データに変換（背景画像と同じ手法です）
+# --- 2. Streamlitの基本設定（どのstコマンドよりも先に実行する） ---
+st.set_page_config(
+    page_title="Relum",
+    page_icon="icon.png", 
+    layout="wide"
+)
+
+# --- 3. 画像の読み込みとHTMLへの埋め込み ---
 icon_bin_str = get_base64("icon.png")
+bg_bin_str = get_base64("bg.png")
 
-# st.set_page_config の直後に配置してください
 if icon_bin_str:
     st.markdown(f"""
         <head>
             <link rel="apple-touch-icon" href="data:image/png;base64,{icon_bin_str}">
             <link rel="icon" href="data:image/png;base64,{icon_bin_str}">
         </head>
+        <style>
+            .stApp {{
+                background-image: url("data:image/png;base64,{bg_bin_str}");
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+            }}
+            /* 他のCSSがあればここに追記 */
+        </style>
     """, unsafe_allow_html=True)
 
-st.markdown(f"""
-    <head>
-        <link rel="apple-touch-icon" href="{ICON_URL}">
-        <link rel="shortcut icon" href="{ICON_URL}">
-    </head>
-""", unsafe_allow_html=True)
-
-# --- 設定 ---
+# --- 4. その他の設定と通信セッション ---
 GAS_URL = st.secrets["GAS_URL"]
 MY_TOKEN = st.secrets["MY_TOKEN"]
 
@@ -53,17 +68,6 @@ def get_ultimate_session():
 session = get_ultimate_session()
 
 st.set_page_config(page_title="勤怠管理システム", layout="centered")
-
-# 画像を読み込んでデータ化
-def get_base64(file):
-    try:
-        with open(file, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
-    except FileNotFoundError:
-        return ""
-
-bin_str = get_base64("bg.png")
 
 # 日付フォーマット用の関数を追加
 def format_date_jp(date_str):
