@@ -213,15 +213,15 @@ if st.session_state.page == "menu":
             st.rerun()
 
     st.markdown("---")
-    if st.button("⏰ 出退勤（打刻）", use_container_width=True, type="primary"):
+    if st.button("出退勤（打刻）", use_container_width=True, type="primary"):
         st.session_state.page = "attendance"
         st.rerun()
 
-    if st.button("🚚 チャーター案件 確認・応募", use_container_width=True):
+    if st.button("チャーター案件 確認・応募", use_container_width=True):
         st.session_state.page = "charter_driver"
         st.rerun()
 
-    if st.button("💰 報酬確定額の確認", use_container_width=True):
+    if st.button("報酬確定額の確認", use_container_width=True):
         st.session_state.page = "reward"
         st.rerun()
 
@@ -385,7 +385,7 @@ elif st.session_state.page == "whiteboard":
                 st.warning("内容を入力してください")
 
     st.markdown("---")
-    st.subheader("現在の社員の動き")
+    st.markdown('''<p style="color:white; font-size:32px; font-family: Constantia; font-weight: bold;">現在の社員の動き</p>''', unsafe_allow_html=True)
     
     if st.button("🔄 最新の状態に更新", use_container_width=True):
         st.rerun()
@@ -409,7 +409,7 @@ elif st.session_state.page == "absent_check":
         st.session_state.page = "menu"
         st.rerun()
     
-    st.title("📊 出退勤管理")
+    st.markdown('''<p style="color:white; font-size:40px; font-family: Constantia; font-weight: bold;">出退勤管理</p>''', unsafe_allow_html=True)
     st.write("シフト表と照合し、未打刻のドライバーを抽出します。")
 
     col1, col2 = st.columns(2)
@@ -421,7 +421,7 @@ elif st.session_state.page == "absent_check":
                     res = session.get(GAS_URL, params={"action": "get_absent", "status": "absent", "token": MY_TOKEN}, timeout=30)
                     data = res.json()
                     absent_list = data.get("absent_list", [])
-                    st.subheader("📌 出勤未打刻")
+                    st.markdown('''<p style="color:white; font-size:32px; font-family: Constantia; font-weight: bold;">出退勤未打刻者一覧</p>''', unsafe_allow_html=True)
                     if absent_list:
                         df_absent = pd.DataFrame(absent_list)
                         df_absent.columns = ["氏名", "予定現場"]
@@ -455,7 +455,7 @@ elif st.session_state.page == "attendance":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
         st.rerun()
-    st.title("出退勤")
+    st.markdown('''<p style="color:white; font-size:40px; font-family: Constantia; font-weight: bold;">出退勤</p>''', unsafe_allow_html=True)
     loc = get_geolocation()
     
     if len(st.session_state.my_stations) > 0:
@@ -525,7 +525,7 @@ elif st.session_state.page == "reward":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
         st.rerun()
-    st.title("報酬確定額確認")
+    st.markdown('''<p style="color:white; font-size:40px; font-family: Constantia; font-weight: bold;">報酬確定額確認</p>''', unsafe_allow_html=True)
     
     now = datetime.now()
     month_options = [f"{(now.year + (now.month - i - 1) // 12)}/{(now.month - i - 1) % 12 + 1:02d}" for i in range(5)]
@@ -547,7 +547,7 @@ elif st.session_state.page == "reward":
                     st.dataframe(my_df[["日時", "現場", "金額"]].assign(日時=my_df["日時_dt"].dt.strftime('%m/%d %H:%M')), use_container_width=True, hide_index=True)
 
                     st.markdown("---")
-                    st.subheader("請求書情報の申請")
+                    st.markdown('''<p style="color:white; font-size:32px; font-family: Constantia; font-weight: bold;">請求書情報の申請</p>''', unsafe_allow_html=True)
                     zip_code = st.text_input("郵便番号", placeholder="123-4567")
                     address = st.text_input("住所", placeholder="石川県金沢市...")
                     bank_info = st.text_input("振込先口座", placeholder="〇〇銀行 支店 普通 1234567")
