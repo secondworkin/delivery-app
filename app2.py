@@ -301,7 +301,7 @@ elif st.session_state.page == "charter_driver":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
         st.rerun()
-     st.markdown('''<p style="color:white; font-size:32px; font-family: Constantia; font-weight: bold;">チャーター案件</p>''', unsafe_allow_html=True)
+    st.markdown('''<p style="color:white; font-size:32px; font-family: Constantia; font-weight: bold;">チャーター案件</p>''', unsafe_allow_html=True)
 
     try:
         res = session.get(GAS_URL, params={"action": "get_charter", "token": MY_TOKEN}, timeout=25)
