@@ -8,6 +8,12 @@ from requests.adapters import HTTPAdapter
 import time
 import base64
 
+st.set_page_config(
+    page_title="タイトル",
+    page_icon="icon.png", # 自作した画像ファイルを指定
+    layout="wide"
+)
+
 # --- 設定 ---
 GAS_URL = st.secrets["GAS_URL"]
 MY_TOKEN = st.secrets["MY_TOKEN"]
