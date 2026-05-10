@@ -450,6 +450,27 @@ elif st.session_state.page == "absent_check":
                 except:
                     st.error("データ取得に失敗しました。")
 
+st.markdown("""
+    <div style="
+        background-color: #262626; 
+        border-left: 5px solid silver; 
+        padding: 12px 20px; 
+        margin: 15px 0px;
+        border-radius: 4px;
+    ">
+        <p style="
+            color: silver; 
+            font-size: 18px; 
+            font-family: 'Constantia', serif;
+            margin: 0; 
+            font-weight: bold;
+            letter-spacing: 1px;
+        ">
+             Drivers Menu
+        </p>
+    </div>
+""", unsafe_allow_html=True)
+
 # --- 出退勤画面 ---
 elif st.session_state.page == "attendance":
     if st.button("⬅️ メニューに戻る"):
