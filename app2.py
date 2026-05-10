@@ -8,7 +8,7 @@ from requests.adapters import HTTPAdapter
 import time
 import base64
 
-# --- 1. まず関数を定義する（これを使わないと画像が読み込めないため） ---
+# --- 1. 関数定義 ---
 def get_base64(file):
     try:
         with open(file, "rb") as f:
@@ -17,39 +17,30 @@ def get_base64(file):
     except FileNotFoundError:
         return ""
 
-# --- 2. Streamlitの基本設定（どのstコマンドよりも先に実行する） ---
+# --- 2. ページ設定 (必ず一番最初に一度だけ実行) ---
 st.set_page_config(
     page_title="Relum",
     page_icon="icon.png", 
     layout="wide"
 )
 
-# --- 3. 画像の読み込みとHTMLへの埋め込み ---
-icon_bin_str = get_base64("icon.png")
+# --- 3. 画像読み込みとアイコン設定 ---
+# ここで取得した bin_str をログイン画面の背景でも使い回します
+bin_str = get_base64("icon.png")
 bg_bin_str = get_base64("bg.png")
 
-if icon_bin_str:
+if bin_str:
     st.markdown(f"""
         <head>
-            <link rel="apple-touch-icon" href="data:image/png;base64,{icon_bin_str}">
-            <link rel="icon" href="data:image/png;base64,{icon_bin_str}">
+            <link rel="apple-touch-icon" href="data:image/png;base64,{bin_str}">
+            <link rel="icon" href="data:image/png;base64,{bin_str}">
         </head>
-        <style>
-            .stApp {{
-                background-image: url("data:image/png;base64,{bg_bin_str}");
-                background-size: cover;
-                background-position: center;
-                background-attachment: fixed;
-            }}
-            /* 他のCSSがあればここに追記 */
-        </style>
     """, unsafe_allow_html=True)
 
-# --- 4. その他の設定と通信セッション ---
+# --- 4. 通信セッション設定 ---
 GAS_URL = st.secrets["GAS_URL"]
 MY_TOKEN = st.secrets["MY_TOKEN"]
 
-# --- 通信セッションの設定（リトライとタイムアウト対策） ---
 @st.cache_resource
 def get_ultimate_session():
     session = requests.Session()
@@ -67,21 +58,17 @@ def get_ultimate_session():
 
 session = get_ultimate_session()
 
-st.set_page_config(page_title="勤怠管理システム", layout="centered")
-
-# 日付フォーマット用の関数を追加
+# 日付フォーマット用の関数
 def format_date_jp(date_str):
     try:
         return pd.to_datetime(date_str).strftime('%m/%d %H:%M')
     except:
         return date_str
 
+# --- 5. 画面表示のスタイル設定 ---
 hide_style = """
     <style>
-    /* ヘッダー・フッター・メニューを完全に隠す */
     header, footer, #MainMenu {visibility: hidden; display: none !important;}
-
-    /* 画面下の余白を詰める */
     .stApp {bottom: 0px !important;}
     </style>
     """
