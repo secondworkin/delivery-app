@@ -11,17 +11,17 @@ import base64
 import streamlit as st
 import base64
 
-# 1. Streamlit標準のアイコン設定（ブラウザのタブ用）
-# 必ずインポート直後、他の表示コマンドより先に記述してください
-st.set_page_config(
-    page_title="Relum",
-    page_icon="icon.png",  # ローカルの画像ファイルを指定
-    layout="wide"
-)
+# アイコン用の画像ファイルをBase64データに変換（背景画像と同じ手法です）
+icon_bin_str = get_base64("icon.png")
 
-# 2. iPhone（iOS）ホーム画面用の強制認識設定
-# GitHub上の「RAW」URLを使用するのが最も確実です
-ICON_URL = "https://raw.githubusercontent.com/secondworkin/Relum/main/icon.png"
+# st.set_page_config の直後に配置してください
+if icon_bin_str:
+    st.markdown(f"""
+        <head>
+            <link rel="apple-touch-icon" href="data:image/png;base64,{icon_bin_str}">
+            <link rel="icon" href="data:image/png;base64,{icon_bin_str}">
+        </head>
+    """, unsafe_allow_html=True)
 
 st.markdown(f"""
     <head>
