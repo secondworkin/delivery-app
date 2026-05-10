@@ -8,11 +8,27 @@ from requests.adapters import HTTPAdapter
 import time
 import base64
 
+import streamlit as st
+import base64
+
+# 1. Streamlit標準のアイコン設定（ブラウザのタブ用）
+# 必ずインポート直後、他の表示コマンドより先に記述してください
 st.set_page_config(
-    page_title="タイトル",
-    page_icon="icon.png", # 自作した画像ファイルを指定
+    page_title="Relum",
+    page_icon="icon.png",  # ローカルの画像ファイルを指定
     layout="wide"
 )
+
+# 2. iPhone（iOS）ホーム画面用の強制認識設定
+# GitHub上の「RAW」URLを使用するのが最も確実です
+ICON_URL = "https://raw.githubusercontent.com/secondworkin/Relum/main/icon.png"
+
+st.markdown(f"""
+    <head>
+        <link rel="apple-touch-icon" href="{ICON_URL}">
+        <link rel="shortcut icon" href="{ICON_URL}">
+    </head>
+""", unsafe_allow_html=True)
 
 # --- 設定 ---
 GAS_URL = st.secrets["GAS_URL"]
