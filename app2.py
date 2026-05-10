@@ -301,7 +301,7 @@ elif st.session_state.page == "charter_driver":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
         st.rerun()
-    st.title("🚚 チャーター案件")
+     st.markdown('''<p style="color:white; font-size:32px; font-family: Constantia; font-weight: bold;">チャーター案件</p>''', unsafe_allow_html=True)
 
     try:
         res = session.get(GAS_URL, params={"action": "get_charter", "token": MY_TOKEN}, timeout=25)
@@ -323,7 +323,7 @@ elif st.session_state.page == "charter_driver":
                     st.write(f"📝 **備考**: {task['note']}")
 
         st.markdown("---")
-        st.subheader("📢 募集中案件")
+        st.markdown('''<p style="color:white; font-size:32px; font-family: Constantia; font-weight: bold;">募集中案件</p>''', unsafe_allow_html=True)
         recruiting = [i for i in charter_list if i['status'] == "募集中"]
         if not recruiting:
             st.info("現在募集中の案件はありません")
@@ -455,7 +455,7 @@ elif st.session_state.page == "attendance":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
         st.rerun()
-    st.title("⏰ 出退勤")
+    st.title("出退勤")
     loc = get_geolocation()
     
     if len(st.session_state.my_stations) > 0:
@@ -525,7 +525,7 @@ elif st.session_state.page == "reward":
     if st.button("⬅️ メニューに戻る"):
         st.session_state.page = "menu"
         st.rerun()
-    st.title("💰 報酬確定額")
+    st.title("報酬確定額確認")
     
     now = datetime.now()
     month_options = [f"{(now.year + (now.month - i - 1) // 12)}/{(now.month - i - 1) % 12 + 1:02d}" for i in range(5)]
@@ -547,7 +547,7 @@ elif st.session_state.page == "reward":
                     st.dataframe(my_df[["日時", "現場", "金額"]].assign(日時=my_df["日時_dt"].dt.strftime('%m/%d %H:%M')), use_container_width=True, hide_index=True)
 
                     st.markdown("---")
-                    st.subheader("📄 請求書情報の申請")
+                    st.subheader("請求書情報の申請")
                     zip_code = st.text_input("郵便番号", placeholder="123-4567")
                     address = st.text_input("住所", placeholder="石川県金沢市...")
                     bank_info = st.text_input("振込先口座", placeholder="〇〇銀行 支店 普通 1234567")
