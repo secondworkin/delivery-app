@@ -8,10 +8,9 @@ from requests.adapters import HTTPAdapter
 import time
 import base64
 
-# --- 1. ページ設定 (一番最初に一度だけ！) ---
+# --- 1. ページ設定 (一番最初に一度だけ実行) ---
 st.set_page_config(
     page_title="Relum",
-    page_icon="icon.png",  # これでタブやホーム画面のアイコンを指定
     layout="wide"
 )
 
@@ -24,12 +23,20 @@ def get_base64(file):
     except FileNotFoundError:
         return ""
 
-# --- 3. 画像のデータ化 (背景などに使う場合のみ) ---
-bin_str = get_base64("icon.png")
+# --- 3. 背景画像の読み込みのみ実行 ---
+# icon.pngの読み込みとst.markdownでの表示を完全に削除しました
 bg_bin_str = get_base64("bg.png")
 
-# ※もしここで st.markdown(...) を使って <link> タグを書いていた場合は、
-# いったん削除して試してください。画面に余計なものが出る原因になります。
+# 背景画像の設定（もし背景として使いたい場合のみ以下を残す）
+if bg_bin_str:
+    st.markdown(f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{bg_bin_str}");
+            background-size: cover;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
 
 # --- 4. 通信セッション設定 ---
 GAS_URL = st.secrets["GAS_URL"]
