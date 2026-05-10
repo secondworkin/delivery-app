@@ -8,40 +8,11 @@ from requests.adapters import HTTPAdapter
 import time
 import base64
 
-# --- 1. ページ設定 (一番最初に一度だけ実行) ---
-st.set_page_config(
-    page_title="Relum",
-    layout="wide"
-)
-
-# --- 2. 関数定義 ---
-def get_base64(file):
-    try:
-        with open(file, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
-    except FileNotFoundError:
-        return ""
-
-# --- 3. 背景画像の読み込みのみ実行 ---
-# icon.pngの読み込みとst.markdownでの表示を完全に削除しました
-bg_bin_str = get_base64("bg.png")
-
-# 背景画像の設定（もし背景として使いたい場合のみ以下を残す）
-if bg_bin_str:
-    st.markdown(f"""
-        <style>
-        .stApp {{
-            background-image: url("data:image/png;base64,{bg_bin_str}");
-            background-size: cover;
-        }}
-        </style>
-    """, unsafe_allow_html=True)
-
-# --- 4. 通信セッション設定 ---
+# --- 設定 ---
 GAS_URL = st.secrets["GAS_URL"]
 MY_TOKEN = st.secrets["MY_TOKEN"]
 
+# --- 通信セッションの設定（リトライとタイムアウト対策） ---
 @st.cache_resource
 def get_ultimate_session():
     session = requests.Session()
@@ -58,6 +29,44 @@ def get_ultimate_session():
     return session
 
 session = get_ultimate_session()
+
+st.set_page_config(page_title="勤怠管理システム", layout="centered")
+
+# 画像を読み込んでデータ化
+def get_base64(file):
+    try:
+        with open(file, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except FileNotFoundError:
+        return ""
+
+bin_str = get_base64("bg.png")
+
+# --- スマホの専用バッジも消す「完全版」 ---
+hide_style = """
+    <style>
+    /* 基本のヘッダー・フッター・メニューを消す */
+    header, footer, #MainMenu {visibility: hidden; display: none !important;}
+
+    /* スマホ版特有の「Hosted with Streamlit」バッジを強制消去 */
+    .viewerBadge_container__1QSob, .viewerBadge_link__1QSob {display: none !important;}
+    div[class^="viewerBadge"] {display: none !important;}
+    
+    /* 右下のデプロイボタンなどを消去 */
+    .stAppDeployButton {display: none !important;}
+    div[data-testid="stStatusWidget"] {display: none !important;}
+
+    /* 画面下の余白を極限まで詰める */
+    .stApp {bottom: 0px !important;}
+    </style>
+    """
+st.markdown(hide_style, unsafe_allow_html=True)
+
+if "page" not in st.session_state:
+    st.session_state.page = "login"
+
+
 
 # 日付フォーマット用の関数
 def format_date_jp(date_str):
