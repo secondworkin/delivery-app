@@ -8,7 +8,14 @@ from requests.adapters import HTTPAdapter
 import time
 import base64
 
-# --- 1. 関数定義 ---
+# --- 1. ページ設定 (一番最初に一度だけ！) ---
+st.set_page_config(
+    page_title="Relum",
+    page_icon="icon.png",  # これでタブやホーム画面のアイコンを指定
+    layout="wide"
+)
+
+# --- 2. 関数定義 ---
 def get_base64(file):
     try:
         with open(file, "rb") as f:
@@ -17,25 +24,12 @@ def get_base64(file):
     except FileNotFoundError:
         return ""
 
-# --- 2. ページ設定 (必ず一番最初に一度だけ実行) ---
-st.set_page_config(
-    page_title="Relum",
-    page_icon="icon.png", 
-    layout="wide"
-)
-
-# --- 3. 画像読み込みとアイコン設定 ---
-# ここで取得した bin_str をログイン画面の背景でも使い回します
+# --- 3. 画像のデータ化 (背景などに使う場合のみ) ---
 bin_str = get_base64("icon.png")
 bg_bin_str = get_base64("bg.png")
 
-if bin_str:
-    st.markdown(f"""
-        <head>
-            <link rel="apple-touch-icon" href="data:image/png;base64,{bin_str}">
-            <link rel="icon" href="data:image/png;base64,{bin_str}">
-        </head>
-    """, unsafe_allow_html=True)
+# ※もしここで st.markdown(...) を使って <link> タグを書いていた場合は、
+# いったん削除して試してください。画面に余計なものが出る原因になります。
 
 # --- 4. 通信セッション設定 ---
 GAS_URL = st.secrets["GAS_URL"]
