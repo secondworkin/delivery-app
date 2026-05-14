@@ -1,0 +1,9 @@
+[client]
+# 右下の「Made with Streamlit」バッジを非表示にする
+showMenuBadge = false
+
+[browser]
+# アイコン（ファビコン）の設定
+# ★この1行が重要です！
+favicon = "icon.png"
+gatherUsageStats = false
