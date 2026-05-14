@@ -8,6 +8,13 @@ from requests.adapters import HTTPAdapter
 import time
 import base64
 
+# --- 1. アプリの基本設定（必ず最初に記述） ---
+st.set_page_config(
+    page_title="Relum Drivers App", 
+    page_icon="icon.png", 
+    layout="centered"
+)
+
 # --- 設定 ---
 GAS_URL = st.secrets["GAS_URL"]
 MY_TOKEN = st.secrets["MY_TOKEN"]
@@ -30,8 +37,6 @@ def get_ultimate_session():
 
 session = get_ultimate_session()
 
-st.set_page_config(page_title="勤怠管理システム", layout="centered")
-
 # 画像を読み込んでデータ化
 def get_base64(file):
     try:
@@ -43,13 +48,14 @@ def get_base64(file):
 
 bin_str = get_base64("bg.png")
 
-# --- スマホの専用バッジも消す「完全版」 ---
+# --- 2. スタイル設定（ヘッダー・フッター・バッジ非表示） ---
+# config.tomlでも設定していますが、念のためCSSでも制御します
 hide_style = """
     <style>
     /* 基本のヘッダー・フッター・メニューを消す */
     header, footer, #MainMenu {visibility: hidden; display: none !important;}
 
-    /* スマホ版特有の「Hosted with Streamlit」バッジを強制消去 */
+    /* スマホ版特有のバッジを強制消去 */
     .viewerBadge_container__1QSob, .viewerBadge_link__1QSob {display: none !important;}
     div[class^="viewerBadge"] {display: none !important;}
     
@@ -59,59 +65,30 @@ hide_style = """
 
     /* 画面下の余白を極限まで詰める */
     .stApp {bottom: 0px !important;}
-    </style>
-    """
-st.markdown(hide_style, unsafe_allow_html=True)
 
-if "page" not in st.session_state:
-    st.session_state.page = "login"
-
-
-
-# 日付フォーマット用の関数
-def format_date_jp(date_str):
-    try:
-        return pd.to_datetime(date_str).strftime('%m/%d %H:%M')
-    except:
-        return date_str
-
-# --- 5. 画面表示のスタイル設定 ---
-hide_style = """
-    <style>
-    header, footer, #MainMenu {visibility: hidden; display: none !important;}
-    .stApp {bottom: 0px !important;}
-    </style>
-    """
-st.markdown(hide_style, unsafe_allow_html=True)
-
-if "page" not in st.session_state:
-    st.session_state.page = "login"
-
-st.markdown("""
-    <style>
-    /* 2. 入力項目のラベル（日付、場所など）をシルバーにする */
+    /* 入力項目のラベル（日付、場所など）をシルバーにする */
     div[data-testid="stWidgetLabel"] p {
         color: silver !important;
         font-size: 16px !important;
         font-weight: bold !important;
     }
 
-    /* 3. 全体の文字（pタグ）をシルバーにする */
+    /* 全体の文字（pタグ）をホワイトにする */
     div[data-testid="stMarkdownContainer"] p {
         color: white;
     }
 
-    /* 5. ボタンの中の文字（濃いグレー） */
+    /* ボタンの中の文字（濃いグレー） */
     div.stButton > button div[data-testid="stMarkdownContainer"] p {
         color: #31333F !important;
     }
 
-    /* 6. 白いボタンの背景を固定 */
+    /* 白いボタンの背景を固定 */
     div.stButton > button:not([kind="primary"]) {
         background-color: white !important;
     }
 
-    /* 7. アコーディオンのタイトル */
+    /* アコーディオンのタイトル */
     .stExpander summary p {
         color: white !important;
     }
@@ -123,9 +100,20 @@ st.markdown("""
         border: 1px solid white !important;
     }
     </style>
-    """, unsafe_allow_html=True)
+    """
+st.markdown(hide_style, unsafe_allow_html=True)
 
-# --- 1. ログイン管理 ---
+# 日付フォーマット用の関数
+def format_date_jp(date_str):
+    try:
+        return pd.to_datetime(date_str).strftime('%m/%d %H:%M')
+    except:
+        return date_str
+
+if "page" not in st.session_state:
+    st.session_state.page = "login"
+
+# --- 3. ログイン管理 ---
 if "user_name" not in st.session_state:
     # ログイン画面専用のロゴ入り背景CSS
     login_bg_css = f"""
@@ -143,7 +131,7 @@ if "user_name" not in st.session_state:
     </style>
     """
     st.markdown(login_bg_css, unsafe_allow_html=True)
-   
+    
     st.markdown('<div style="padding-top: 50px;"></div>', unsafe_allow_html=True) 
     st.markdown('''<p style="color:silver; font-size:40px; font-family: Constantia;">login</p>''', unsafe_allow_html=True)
     st.markdown('<p style="color:white; font-size:15px;">IDを入力してください</p>', unsafe_allow_html=True)
@@ -199,7 +187,7 @@ if "user_name" in st.session_state:
     st.markdown(app_bg_css, unsafe_allow_html=True)
 
 
-# --- 3. メインメニュー画面 ---
+# --- 4. メインメニュー画面 ---
 if st.session_state.page == "menu":
     st.markdown('''<p style="color:silver; font-size:40px; font-family: Constantia;">main menu</p>''', unsafe_allow_html=True)
     st.markdown(f'''<p style="color:white; font-size:18px; font-family: sans-serif;">User : <span style="color:white; font-weight:bold;">{st.session_state.user_name}</span></p>''', unsafe_allow_html=True)
@@ -235,7 +223,6 @@ if st.session_state.page == "menu":
             st.session_state.page = "absent_check"
             st.rerun()
 
-    # --- 水平線の代わりに看板を設置 ---
     st.markdown("""
     <div style="
         background-color: #262626; 
@@ -257,7 +244,6 @@ if st.session_state.page == "menu":
     </div>
 """, unsafe_allow_html=True)
 
-    # --- 以下、各ボタンの処理 ---
     if st.button("出退勤（打刻）", use_container_width=True, type="primary"):
         st.session_state.page = "attendance"
         st.rerun()
